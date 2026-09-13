@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Rajdhani', 'SF Pro Display', 'Inter', system-ui, sans-serif;
+    background-color: #060813;
+    color: #f1f5f9;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  h1, h2, h3, .font-heading {
+    font-family: 'Orbitron', -apple-system, 'SF Pro Display', sans-serif;
+    letter-spacing: 0.05em;
+  }
+
+  .font-mono-cyber {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Premium Minimalist Glass Panels */
+.glass-panel {
+  background: rgba(13, 18, 36, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-pill {
+  background: rgba(18, 24, 48, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Subtle, Elegant Luminescence */
+.glow-cyan {
+  text-shadow: 0 0 16px rgba(0, 245, 255, 0.5), 0 0 32px rgba(0, 245, 255, 0.2);
+}
+
+.glow-purple {
+  text-shadow: 0 0 16px rgba(168, 85, 247, 0.5), 0 0 32px rgba(168, 85, 247, 0.2);
+}
+
+.glow-yellow {
+  text-shadow: 0 0 16px rgba(255, 230, 0, 0.5), 0 0 32px rgba(255, 230, 0, 0.2);
+}
+
+.glow-pink {
+  text-shadow: 0 0 16px rgba(255, 0, 128, 0.5), 0 0 32px rgba(255, 0, 128, 0.2);
+}
+
+/* Premium Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, #00f5ff 0%, #00b4d8 100%);
+  color: #030712;
+  font-weight: 700;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(0, 245, 255, 0.35);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 8px 30px rgba(0, 245, 255, 0.5);
+}
+
+.btn-primary:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 245, 255, 0.4);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
+}
+
+/* Ambient Radial Lighting */
+.ambient-glow {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(120px);
+  pointer-events: none;
+  opacity: 0.25;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

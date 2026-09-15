@@ -144,24 +144,37 @@ export function App() {
     }
   }, [transitionNextLevel]);
 
+  useEffect(() => {
+    // Unconditional safe audio context unlock on first user gesture
+    const unlockAudio = () => {
+      soundEngine.init();
+    };
+    window.addEventListener('pointerdown', unlockAudio, { once: true, passive: true });
+    window.addEventListener('keydown', unlockAudio, { once: true, passive: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+    };
+  }, []);
+
   return (
-    <div className="relative flex flex-col items-center justify-between w-screen h-screen bg-[#060813] overflow-hidden select-none">
+    <div className="relative flex flex-col items-center justify-between w-full h-[100dvh] min-h-[100dvh] max-h-[100dvh] bg-[#060813] overflow-hidden select-none safe-top safe-bottom safe-left safe-right">
       {/* Soft Ambient Radial Lights */}
-      <div className="ambient-glow top-0 left-1/4 w-[450px] h-[450px] bg-cyan-500/15" />
-      <div className="ambient-glow bottom-0 right-1/4 w-[450px] h-[450px] bg-indigo-500/15" />
+      <div className="ambient-glow top-0 left-1/4 w-[350px] sm:w-[450px] h-[350px] sm:h-[450px] bg-cyan-500/15" />
+      <div className="ambient-glow bottom-0 right-1/4 w-[350px] sm:w-[450px] h-[350px] sm:h-[450px] bg-indigo-500/15" />
 
       {/* Achievement Unlock Toast */}
       {achievementToast && (
-        <div className="fixed top-4 right-4 z-50 glass-panel p-4 rounded-2xl border border-amber-500/50 flex items-center gap-3 shadow-2xl shadow-amber-950/60 animate-slide-down">
-          <div className="text-3xl p-2 rounded-xl bg-amber-500/20 border border-amber-500/40">
+        <div className="fixed top-4 right-4 z-50 glass-panel p-3 sm:p-4 rounded-2xl border border-amber-500/50 flex items-center gap-3 shadow-2xl shadow-amber-950/60 animate-slide-down max-w-[90vw]">
+          <div className="text-2xl sm:text-3xl p-2 rounded-xl bg-amber-500/20 border border-amber-500/40 shrink-0">
             {achievementToast.icon}
           </div>
-          <div>
-            <span className="text-[10px] font-mono-cyber font-bold tracking-widest text-amber-400 uppercase">
+          <div className="min-w-0">
+            <span className="text-[9px] sm:text-[10px] font-mono-cyber font-bold tracking-widest text-amber-400 uppercase truncate block">
               ACHIEVEMENT UNLOCKED!
             </span>
-            <h4 className="text-sm font-heading font-black text-white">{achievementToast.title}</h4>
-            <p className="text-xs font-mono-cyber text-slate-300">{achievementToast.description}</p>
+            <h4 className="text-xs sm:text-sm font-heading font-black text-white truncate">{achievementToast.title}</h4>
+            <p className="text-[11px] sm:text-xs font-mono-cyber text-slate-300 leading-tight">{achievementToast.description}</p>
           </div>
         </div>
       )}

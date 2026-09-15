@@ -35,11 +35,11 @@ export const CountdownOverlay: React.FC<CountdownOverlayProps> = ({ onComplete }
     <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-30 pointer-events-none select-none">
       <div key={count} className="animate-in zoom-in-75 fade-in duration-200 flex flex-col items-center">
         {count > 0 ? (
-          <div className="text-8xl sm:text-9xl font-heading font-black text-white glow-cyan tracking-tight">
+          <div className="text-6xl sm:text-9xl font-heading font-black text-white glow-cyan tracking-tight">
             {count}
           </div>
         ) : (
-          <div className="text-7xl sm:text-9xl font-heading font-black text-cyan-400 glow-cyan tracking-tight">
+          <div className="text-6xl sm:text-9xl font-heading font-black text-cyan-400 glow-cyan tracking-tight">
             GO!
           </div>
         )}

@@ -44,8 +44,8 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/75 backdrop-blur-xl z-40 p-4 animate-in fade-in duration-300 select-none">
-      <div className="glass-panel w-full max-w-md p-8 rounded-3xl text-center flex flex-col items-center gap-6">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/75 backdrop-blur-xl z-40 p-3 sm:p-4 animate-in fade-in duration-300 select-none">
+      <div className="glass-panel w-full max-w-md p-5 sm:p-8 rounded-3xl text-center flex flex-col items-center gap-4 sm:gap-6 max-h-[90vh] overflow-y-auto">
         {/* Crown Icon */}
         <div className="w-14 h-14 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400 shadow-[0_0_24px_rgba(251,191,36,0.3)]">
           <Crown className="w-7 h-7" />
@@ -55,7 +55,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         {stats.gameMode === 'speed_challenge' && (
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-300 text-[11px] font-mono-cyber uppercase tracking-widest">
             <Zap className="w-3 h-3 text-fuchsia-400" />
-            <span>SPEED CHALLENGE</span>
+            <span>NEON VELOCITY</span>
           </div>
         )}
 
@@ -80,7 +80,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         </div>
 
         {/* Clean Minimal Stats Row */}
-        <div className="grid grid-cols-4 gap-2 w-full text-xs font-mono-cyber">
+        <div className={`grid ${stats.gameMode === 'speed_challenge' ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'} gap-2 w-full text-xs font-mono-cyber`}>
           <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
             <div className="text-[9px] text-slate-500 uppercase">HIGH SCORE</div>
             <div className="font-bold text-slate-200 mt-0.5">{stats.highScore.toLocaleString()}</div>
@@ -96,10 +96,12 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             <div className="font-bold text-emerald-400 mt-0.5">{stats.foodCollected}</div>
           </div>
 
-          <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-            <div className="text-[9px] text-slate-500 uppercase">COINS</div>
-            <div className="font-bold text-amber-400 mt-0.5">🪙 {(stats.coins || 0).toLocaleString()}</div>
-          </div>
+          {stats.gameMode !== 'speed_challenge' && (
+            <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+              <div className="text-[9px] text-slate-500 uppercase">COINS</div>
+              <div className="font-bold text-amber-400 mt-0.5">🪙 {(stats.coins || 0).toLocaleString()}</div>
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}

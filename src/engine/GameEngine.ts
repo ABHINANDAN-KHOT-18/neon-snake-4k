@@ -126,6 +126,10 @@ export class GameEngine {
     this.updateSnakeColors();
     this.resizeCanvas();
     window.addEventListener('resize', this.handleResize);
+    window.addEventListener('orientationchange', this.handleResize);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', this.handleResize);
+    }
   }
 
   public setTheme(themeId: ThemeId) {
@@ -138,6 +142,10 @@ export class GameEngine {
     this.stopLoop();
     soundEngine.stopMusic();
     window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener('orientationchange', this.handleResize);
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', this.handleResize);
+    }
   }
 
   private handleResize = () => {
@@ -152,11 +160,11 @@ export class GameEngine {
     const rect = parent.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
 
-    let availableWidth = rect.width > 0 ? rect.width : window.innerWidth - 32;
-    let availableHeight = rect.height > 0 ? rect.height : window.innerHeight * 0.7;
+    let availableWidth = rect.width > 0 ? rect.width : window.innerWidth - 24;
+    let availableHeight = rect.height > 0 ? rect.height : window.innerHeight * 0.65;
 
-    const size = Math.min(availableWidth, availableHeight) - 8;
-    const finalSize = Math.max(280, Math.floor(size));
+    const size = Math.min(availableWidth, availableHeight) - 6;
+    const finalSize = Math.max(220, Math.floor(size));
 
     this.canvas.width = finalSize * dpr;
     this.canvas.height = finalSize * dpr;

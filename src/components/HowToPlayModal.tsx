@@ -41,8 +41,8 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({ onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-md z-40 p-4 animate-in fade-in duration-200">
-      <div className="glass-panel w-full max-w-md p-6 sm:p-7 rounded-3xl text-left flex flex-col gap-6">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-md z-40 p-3 sm:p-4 animate-in fade-in duration-200">
+      <div className="glass-panel w-full max-w-md p-5 sm:p-7 rounded-3xl text-left flex flex-col gap-5 sm:gap-6 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-heading font-black tracking-tight text-white">

@@ -76,23 +76,23 @@ export const LevelTransitionOverlay: React.FC<LevelTransitionOverlayProps> = ({
     <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-md z-30 pointer-events-none select-none animate-in fade-in duration-300">
       <div className="flex flex-col items-center text-center">
         {/* Level Up Title Banner */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill border border-cyan-400/30 text-cyan-400 text-xs font-mono-cyber uppercase tracking-[0.25em] mb-3">
-          <Sparkles className="w-3.5 h-3.5" />
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 sm:px-4 sm:py-1.5 rounded-full glass-pill border border-cyan-400/30 text-cyan-400 text-[10px] sm:text-xs font-mono-cyber uppercase tracking-[0.25em] mb-2 sm:mb-3">
+          <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
           <span>LEVEL COMPLETE</span>
         </div>
 
-        <h2 className="text-3xl sm:text-4xl font-heading font-black tracking-wider text-white glow-cyan mb-1">
+        <h2 className="text-2xl sm:text-4xl font-heading font-black tracking-wider text-white glow-cyan mb-1">
           LEVEL UP!
         </h2>
 
-        <div className="text-sm sm:text-base font-heading font-semibold text-slate-300 uppercase tracking-widest mb-6">
+        <div className="text-xs sm:text-base font-heading font-semibold text-slate-300 uppercase tracking-widest mb-4 sm:mb-6">
           LEVEL {formattedLevel} • {levelCfg.name}
         </div>
 
         {/* Dynamic Countdown Display */}
-        <div className="h-28 flex items-center justify-center">
+        <div className="h-20 sm:h-28 flex items-center justify-center">
           {phase === 'INTRO' && (
-            <div className="text-xs font-mono-cyber text-slate-400 uppercase tracking-[0.3em] animate-pulse">
+            <div className="text-[10px] sm:text-xs font-mono-cyber text-slate-400 uppercase tracking-[0.3em] animate-pulse">
               PREPARING ARENA...
             </div>
           )}
@@ -100,7 +100,7 @@ export const LevelTransitionOverlay: React.FC<LevelTransitionOverlayProps> = ({
           {(phase === '3' || phase === '2' || phase === '1') && (
             <div
               key={phase}
-              className="text-7xl sm:text-9xl font-heading font-black text-white glow-cyan tracking-tight animate-in zoom-in-50 fade-in duration-200"
+              className="text-6xl sm:text-9xl font-heading font-black text-white glow-cyan tracking-tight animate-in zoom-in-50 fade-in duration-200"
             >
               {phase}
             </div>
@@ -109,7 +109,7 @@ export const LevelTransitionOverlay: React.FC<LevelTransitionOverlayProps> = ({
           {phase === 'GO' && (
             <div
               key="GO"
-              className="text-7xl sm:text-9xl font-heading font-black text-cyan-400 glow-cyan tracking-tight animate-in zoom-in-75 fade-in duration-150"
+              className="text-6xl sm:text-9xl font-heading font-black text-cyan-400 glow-cyan tracking-tight animate-in zoom-in-75 fade-in duration-150"
             >
               GO!
             </div>

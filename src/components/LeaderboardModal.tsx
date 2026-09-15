@@ -51,7 +51,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ onClose }) =
             }`}
           >
             <Play className="w-3 h-3" />
-            NORMAL
+            CHALLENGE
           </button>
           <button
             onClick={() => setFilterMode('speed_challenge')}
@@ -60,7 +60,7 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ onClose }) =
             }`}
           >
             <Zap className="w-3 h-3" />
-            SPEED
+            VELOCITY
           </button>
         </div>
 
@@ -111,7 +111,7 @@ const LeaderboardRow: React.FC<{ rank: number; entry: LeaderboardEntry }> = ({ r
               {entry.score.toLocaleString()}
             </span>
             <span className="text-[10px] font-mono-cyber uppercase px-2 py-0.5 rounded-full bg-white/10 text-slate-300">
-              {entry.mode === 'speed_challenge' ? 'SPEED' : 'NORMAL'}
+              {entry.mode === 'speed_challenge' ? 'VELOCITY' : 'CHALLENGE'}
             </span>
           </div>
           <span className="text-[11px] font-mono-cyber text-slate-400">

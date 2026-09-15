@@ -105,37 +105,62 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  // Touch Swipe Gesture Handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-  };
+  // Touch Swipe Gesture Handlers with preventDefault on touchmove
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStartRef.current || !engineRef.current) return;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - touchStartRef.current.x;
-    const dy = touch.clientY - touchStartRef.current.y;
-    const minSwipeDistance = 16;
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+      }
+    };
 
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > minSwipeDistance) {
-      engineRef.current.handleInput(dx > 0 ? 'RIGHT' : 'LEFT');
-    } else if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > minSwipeDistance) {
-      engineRef.current.handleInput(dy > 0 ? 'DOWN' : 'UP');
-    }
-    touchStartRef.current = null;
-  };
+    const onTouchMove = (e: TouchEvent) => {
+      // Prevent browser scroll/pull-to-refresh while swiping over canvas
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!touchStartRef.current || !engineRef.current) return;
+      if (e.changedTouches.length > 0) {
+        const touch = e.changedTouches[0];
+        const dx = touch.clientX - touchStartRef.current.x;
+        const dy = touch.clientY - touchStartRef.current.y;
+        const minSwipeDistance = 20;
+
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > minSwipeDistance) {
+          engineRef.current.handleInput(dx > 0 ? 'RIGHT' : 'LEFT');
+        } else if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > minSwipeDistance) {
+          engineRef.current.handleInput(dy > 0 ? 'DOWN' : 'UP');
+        }
+      }
+      touchStartRef.current = null;
+    };
+
+    container.addEventListener('touchstart', onTouchStart, { passive: true });
+    container.addEventListener('touchmove', onTouchMove, { passive: false });
+    container.addEventListener('touchend', onTouchEnd, { passive: true });
+    container.addEventListener('touchcancel', () => { touchStartRef.current = null; }, { passive: true });
+
+    return () => {
+      container.removeEventListener('touchstart', onTouchStart);
+      container.removeEventListener('touchmove', onTouchMove);
+      container.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [engineRef]);
 
   return (
     <div
       ref={containerRef}
-      className="relative flex-1 flex items-center justify-center w-full max-h-[74vh] p-2 overflow-hidden select-none"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      className="relative flex-1 flex items-center justify-center w-full min-h-0 p-1 sm:p-2 overflow-hidden select-none touch-none"
     >
       <canvas
         ref={canvasRef}
-        className="rounded-3xl border border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.8)] bg-[#080b18] touch-none"
+        className="rounded-2xl sm:rounded-3xl border border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.8)] bg-[#080b18] touch-none"
       />
     </div>
   );

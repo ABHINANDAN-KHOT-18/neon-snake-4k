@@ -10,6 +10,14 @@
     -webkit-tap-highlight-color: transparent;
   }
   
+  html, body, #root {
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Rajdhani', 'SF Pro Display', 'Inter', system-ui, sans-serif;
     background-color: #060813;
@@ -17,6 +25,7 @@
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
+    touch-action: manipulation;
   }
 
   h1, h2, h3, .font-heading {
@@ -27,6 +36,20 @@
   .font-mono-cyber {
     font-family: 'JetBrains Mono', monospace;
   }
+}
+
+/* Safe Area Inset Support */
+.safe-top {
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+}
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+.safe-left {
+  padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+}
+.safe-right {
+  padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
 }
 
 /* Premium Minimalist Glass Panels */

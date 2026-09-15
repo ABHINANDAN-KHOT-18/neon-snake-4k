@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Direction } from '../engine/Snake';
 
@@ -7,59 +7,67 @@ interface VirtualDPadProps {
 }
 
 export const VirtualDPad: React.FC<VirtualDPadProps> = ({ onDirection }) => {
-  const handlePress = (dir: Direction, e: React.TouchEvent | React.MouseEvent) => {
+  const lastPressTimeRef = useRef<number>(0);
+
+  const handlePointerDown = (dir: Direction, e: React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Prevent debounce/duplicate firing within 40ms
+    const now = performance.now();
+    if (now - lastPressTimeRef.current < 40) return;
+    lastPressTimeRef.current = now;
+
     onDirection(dir);
-    if ('vibrate' in navigator) {
-      navigator.vibrate(8);
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate(10);
+      } catch {
+        // Ignore vibration errors
+      }
     }
   };
 
   return (
-    <div className="flex md:hidden items-center justify-center pb-4 pt-1 z-20 select-none">
-      <div className="relative w-36 h-36 rounded-full glass-pill flex items-center justify-center shadow-lg">
-        {/* Center dot */}
-        <div className="w-2.5 h-2.5 rounded-full bg-cyan-400/40" />
+    <div className="flex md:hidden items-center justify-center pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pt-1 z-20 select-none touch-none">
+      <div className="relative w-36 h-36 sm:w-40 sm:h-40 rounded-full glass-pill flex items-center justify-center shadow-2xl border border-white/10">
+        {/* Center glowing dot */}
+        <div className="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(0,245,255,0.8)]" />
 
         {/* UP */}
         <button
-          onTouchStart={(e) => handlePress('UP', e)}
-          onMouseDown={(e) => handlePress('UP', e)}
+          onPointerDown={(e) => handlePointerDown('UP', e)}
           aria-label="Move Up"
-          className="absolute top-1 left-1/2 -translate-x-1/2 w-11 h-11 rounded-full flex items-center justify-center text-slate-300 active:text-cyan-400 active:bg-white/10 transition-all"
+          className="absolute top-1 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full flex items-center justify-center text-slate-300 active:text-cyan-400 active:bg-cyan-500/20 active:scale-95 transition-all touch-none"
         >
-          <ChevronUp className="w-6 h-6" />
+          <ChevronUp className="w-7 h-7" />
         </button>
 
         {/* DOWN */}
         <button
-          onTouchStart={(e) => handlePress('DOWN', e)}
-          onMouseDown={(e) => handlePress('DOWN', e)}
+          onPointerDown={(e) => handlePointerDown('DOWN', e)}
           aria-label="Move Down"
-          className="absolute bottom-1 left-1/2 -translate-x-1/2 w-11 h-11 rounded-full flex items-center justify-center text-slate-300 active:text-cyan-400 active:bg-white/10 transition-all"
+          className="absolute bottom-1 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full flex items-center justify-center text-slate-300 active:text-cyan-400 active:bg-cyan-500/20 active:scale-95 transition-all touch-none"
         >
-          <ChevronDown className="w-6 h-6" />
+          <ChevronDown className="w-7 h-7" />
         </button>
 
         {/* LEFT */}
         <button
-          onTouchStart={(e) => handlePress('LEFT', e)}
-          onMouseDown={(e) => handlePress('LEFT', e)}
+          onPointerDown={(e) => handlePointerDown('LEFT', e)}
           aria-label="Move Left"
-          className="absolute left-1 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-slate-300 active:text-cyan-400 active:bg-white/10 transition-all"
+          className="absolute left-1 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center text-slate-300 active:text-cyan-400 active:bg-cyan-500/20 active:scale-95 transition-all touch-none"
         >
-          <ChevronLeft className="w-6 h-6" />
+          <ChevronLeft className="w-7 h-7" />
         </button>
 
         {/* RIGHT */}
         <button
-          onTouchStart={(e) => handlePress('RIGHT', e)}
-          onMouseDown={(e) => handlePress('RIGHT', e)}
+          onPointerDown={(e) => handlePointerDown('RIGHT', e)}
           aria-label="Move Right"
-          className="absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-slate-300 active:text-cyan-400 active:bg-white/10 transition-all"
+          className="absolute right-1 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center text-slate-300 active:text-cyan-400 active:bg-cyan-500/20 active:scale-95 transition-all touch-none"
         >
-          <ChevronRight className="w-6 h-6" />
+          <ChevronRight className="w-7 h-7" />
         </button>
       </div>
     </div>

@@ -113,31 +113,31 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-[540px] w-full max-w-2xl p-6 mx-auto my-auto text-center z-20 select-none">
+    <div className="relative flex flex-col items-center justify-center w-full max-w-2xl px-3 py-3 sm:p-6 mx-auto my-auto text-center z-20 select-none">
       {/* Top Header Row: Coins display */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full glass-pill text-amber-300 text-xs font-mono-cyber border border-amber-500/30">
-          <Coins className="w-4 h-4 text-amber-400 animate-pulse" />
+      <div className="flex items-center gap-3 mb-3 sm:mb-6">
+        <div className="inline-flex items-center gap-1.5 px-3 py-0.5 sm:px-3.5 sm:py-1 rounded-full glass-pill text-amber-300 text-[11px] sm:text-xs font-mono-cyber border border-amber-500/30">
+          <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 animate-pulse" />
           <span className="font-bold text-white">{coins.toLocaleString()}</span>
         </div>
       </div>
 
       {/* Hero Typography */}
-      <h1 className="text-5xl sm:text-7xl font-heading font-black tracking-tight text-white glow-cyan mb-2">
+      <h1 className="text-4xl sm:text-7xl font-heading font-black tracking-tight text-white glow-cyan mb-1 sm:mb-2">
         NEON SNAKE
       </h1>
 
-      <p className="text-xs sm:text-sm font-mono-cyber text-slate-400 tracking-[0.25em] uppercase mb-10">
+      <p className="text-[10px] sm:text-sm font-mono-cyber text-slate-400 tracking-[0.25em] uppercase mb-4 sm:mb-8">
         MASTER THE GRID
       </p>
 
       {/* Two Main Mode Cards */}
-      <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
         {/* Mode 1: Snake Challenge */}
-        <div className="glass-panel rounded-2xl p-6 flex flex-col items-center justify-between gap-4 border border-cyan-500/20 hover:border-cyan-500/40 transition-all duration-300 group">
+        <div className="glass-panel rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-between gap-3 sm:gap-4 border border-cyan-500/20 hover:border-cyan-500/40 transition-all duration-300 group">
           <div className="flex items-center gap-2 mb-1">
-            <Play className="w-5 h-5 text-cyan-400" />
-            <span className="text-base font-heading font-black tracking-widest text-white">SNAKE CHALLENGE</span>
+            <Play className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
+            <span className="text-sm sm:text-base font-heading font-black tracking-widest text-white">SNAKE CHALLENGE</span>
           </div>
           {normalHighScore > 0 && (
             <div className="inline-flex items-center gap-1.5 text-[11px] font-mono-cyber text-amber-300">
@@ -158,11 +158,11 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         </div>
 
         {/* Mode 2: Neon Velocity */}
-        <div className="glass-panel rounded-2xl p-6 flex flex-col items-center justify-between gap-4 border border-fuchsia-500/20 hover:border-fuchsia-500/40 transition-all duration-300 group relative overflow-hidden">
+        <div className="glass-panel rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-between gap-3 sm:gap-4 border border-fuchsia-500/20 hover:border-fuchsia-500/40 transition-all duration-300 group relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/5 to-transparent pointer-events-none rounded-2xl" />
           <div className="flex items-center gap-2 mb-1">
-            <Zap className="w-5 h-5 text-fuchsia-400" />
-            <span className="text-base font-heading font-black tracking-widest text-white">NEON VELOCITY</span>
+            <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-fuchsia-400" />
+            <span className="text-sm sm:text-base font-heading font-black tracking-widest text-white">NEON VELOCITY</span>
           </div>
           {speedChallengeHighScore > 0 && (
             <div className="inline-flex items-center gap-1.5 text-[11px] font-mono-cyber text-fuchsia-300">
@@ -185,13 +185,13 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       </div>
 
       {/* Secondary Buttons Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full max-w-lg">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 w-full max-w-lg">
         <button
           onClick={() => {
             soundEngine.playClick();
             onHowToPlay();
           }}
-          className="btn-secondary py-2.5 px-3 rounded-2xl text-xs font-heading font-bold flex items-center justify-center gap-1.5"
+          className="btn-secondary py-2 sm:py-2.5 px-2 sm:px-3 rounded-2xl text-[11px] sm:text-xs font-heading font-bold flex items-center justify-center gap-1.5"
         >
           <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
           <span>HELP</span>
@@ -202,7 +202,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             soundEngine.playClick();
             onAchievements();
           }}
-          className="btn-secondary py-2.5 px-3 rounded-2xl text-xs font-heading font-bold flex items-center justify-center gap-1.5"
+          className="btn-secondary py-2 sm:py-2.5 px-2 sm:px-3 rounded-2xl text-[11px] sm:text-xs font-heading font-bold flex items-center justify-center gap-1.5"
         >
           <Trophy className="w-3.5 h-3.5 text-amber-400" />
           <span>TROPHIES</span>
@@ -213,7 +213,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             soundEngine.playClick();
             onLeaderboard();
           }}
-          className="btn-secondary py-2.5 px-3 rounded-2xl text-xs font-heading font-bold flex items-center justify-center gap-1.5"
+          className="btn-secondary py-2 sm:py-2.5 px-2 sm:px-3 rounded-2xl text-[11px] sm:text-xs font-heading font-bold flex items-center justify-center gap-1.5"
         >
           <Award className="w-3.5 h-3.5 text-fuchsia-400" />
           <span>SCORES</span>
@@ -224,7 +224,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             soundEngine.playClick();
             onSettings();
           }}
-          className="btn-secondary py-2.5 px-3 rounded-2xl text-xs font-heading font-bold flex items-center justify-center gap-1.5"
+          className="btn-secondary py-2 sm:py-2.5 px-2 sm:px-3 rounded-2xl text-[11px] sm:text-xs font-heading font-bold flex items-center justify-center gap-1.5"
         >
           <Settings className="w-3.5 h-3.5 text-slate-400" />
           <span>SETTINGS</span>
@@ -232,7 +232,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       </div>
 
       {/* Footer - Contains ONLY @itzz_abhiii.18x */}
-      <div className="mt-8 text-slate-500 text-[11px] font-mono-cyber tracking-wider">
+      <div className="mt-4 sm:mt-8 text-slate-500 text-[10px] sm:text-[11px] font-mono-cyber tracking-wider">
         @itzz_abhiii.18x
       </div>
     </div>
@@ -269,12 +269,12 @@ const NeonVelocityScreen: React.FC<NeonVelocityScreenProps> = ({
   const has500Coins = coins >= 500;
 
   return (
-    <div className="relative flex flex-col items-center w-full max-w-lg mx-auto my-auto p-6 z-20 select-none">
+    <div className="relative flex flex-col items-center w-full max-w-lg mx-auto my-auto p-3 sm:p-6 z-20 select-none">
       {/* Top Navigation Row */}
-      <div className="w-full flex items-center justify-between mb-4">
+      <div className="w-full flex items-center justify-between mb-2 sm:mb-4">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-xs font-mono-cyber uppercase tracking-widest"
+          className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-xs font-mono-cyber uppercase tracking-widest py-1"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back</span>
@@ -283,12 +283,12 @@ const NeonVelocityScreen: React.FC<NeonVelocityScreenProps> = ({
 
       {/* Header Title */}
       <div className="flex items-center gap-2 mb-1">
-        <Zap className="w-6 h-6 text-fuchsia-400" />
-        <h2 className="text-2xl sm:text-3xl font-heading font-black tracking-widest text-white">
+        <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-fuchsia-400" />
+        <h2 className="text-xl sm:text-3xl font-heading font-black tracking-widest text-white">
           NEON VELOCITY
         </h2>
       </div>
-      <p className="text-xs font-mono-cyber text-slate-400 tracking-[0.2em] mb-4">
+      <p className="text-[10px] sm:text-xs font-mono-cyber text-slate-400 tracking-[0.2em] mb-3 sm:mb-4">
         SPEED CONTROL & AUTOMATION
       </p>
 

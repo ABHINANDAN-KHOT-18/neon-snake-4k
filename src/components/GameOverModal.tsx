@@ -17,8 +17,8 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   const isSpeedChallenge = stats.gameMode === 'speed_challenge';
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-lg z-40 p-4 animate-in fade-in duration-300 select-none">
-      <div className="glass-panel w-full max-w-sm p-8 rounded-3xl text-center flex flex-col items-center gap-6">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-lg z-40 p-3 sm:p-4 animate-in fade-in duration-300 select-none">
+      <div className="glass-panel w-full max-w-sm p-5 sm:p-8 rounded-3xl text-center flex flex-col items-center gap-4 sm:gap-6 max-h-[90vh] overflow-y-auto">
         {/* New High Score Pill */}
         {stats.isNewHighScore && (
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[11px] font-mono-cyber uppercase tracking-widest animate-bounce">
@@ -31,7 +31,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
         {isSpeedChallenge && (
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-300 text-[11px] font-mono-cyber uppercase tracking-widest">
             <Zap className="w-3 h-3 text-fuchsia-400" />
-            <span>SPEED CHALLENGE</span>
+            <span>NEON VELOCITY</span>
           </div>
         )}
 
@@ -42,7 +42,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
 
         {/* Score Display */}
         <div className="flex flex-col items-center">
-          <span className="text-5xl sm:text-6xl font-heading font-black text-white glow-cyan tracking-tight">
+          <span className="text-4xl sm:text-6xl font-heading font-black text-white glow-cyan tracking-tight">
             {stats.score.toLocaleString()}
           </span>
           <span className="text-[11px] font-mono-cyber uppercase tracking-[0.2em] text-slate-400 mt-1">
@@ -51,7 +51,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
         </div>
 
         {/* Quick Stats Pill Row */}
-        <div className="flex items-center justify-center gap-3 text-xs font-mono-cyber text-slate-400 py-1.5 px-4 rounded-full bg-white/[0.03]">
+        <div className="flex items-center justify-center gap-2.5 sm:gap-3 text-xs font-mono-cyber text-slate-400 py-1.5 px-3.5 sm:px-4 rounded-full bg-white/[0.03] flex-wrap">
           <div className="flex items-center gap-1.5">
             <Trophy className={`w-3.5 h-3.5 ${isSpeedChallenge ? 'text-fuchsia-400' : 'text-amber-400'}`} />
             <span>BEST:</span>
@@ -61,11 +61,15 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           <div>
             LEVEL <span className="font-bold text-slate-200">{stats.level}</span>
           </div>
-          <span className="text-white/10">•</span>
-          <div className="flex items-center gap-1 text-amber-300">
-            <span>🪙</span>
-            <span className="font-bold">{(stats.coins || 0).toLocaleString()}</span>
-          </div>
+          {!isSpeedChallenge && (
+            <>
+              <span className="text-white/10">•</span>
+              <div className="flex items-center gap-1 text-amber-300">
+                <span>🪙</span>
+                <span className="font-bold">{(stats.coins || 0).toLocaleString()}</span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Action Buttons */}

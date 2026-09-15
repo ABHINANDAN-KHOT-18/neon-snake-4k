@@ -10,6 +10,15 @@ import { soundEngine } from './SoundEngine';
 import { StorageManager } from './Storage';
 
 export type GameState = 'MENU' | 'COUNTDOWN' | 'PLAYING' | 'PAUSED' | 'GAMEOVER' | 'VICTORY' | 'LEVEL_TRANSITION';
+export type GameMode = 'normal' | 'speed_challenge';
+export type SCSpeedType = 'automatic' | 'custom';
+
+export interface SpeedChallengeConfig {
+  speedType: SCSpeedType;
+  startingSpeed: number;
+  maximumSpeed: number;
+  speedIncrease: number;
+}
 
 export interface GameStatsSnapshot {
   score: number;
@@ -23,6 +32,8 @@ export interface GameStatsSnapshot {
   comboTimeLeft: number;
   isNewHighScore: boolean;
   gameDuration: number;
+  gameMode: GameMode;
+  scSpeedType: SCSpeedType;
 }
 
 export class GameEngine {
@@ -57,6 +68,18 @@ export class GameEngine {
   // Timing & Movement Tick
   private tickAccumulator: number = 0;
   private baseTickRate: number = 7;
+
+  // --- Speed Challenge State ---
+  public gameMode: GameMode = 'normal';
+  public scSpeedType: SCSpeedType = 'automatic';
+  private scCurrentSpeed: number = 1.5;
+  private scMaximumSpeed: number = 6.0;
+  private scSpeedIncrease: number = 0.5;
+
+  /** Speed multipliers for Automatic SC per level (index 0 = level 1) */
+  private static readonly SC_AUTO_SPEEDS: number[] = [
+    1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0,
+  ];
 
   // React State Callbacks
   public onStatsChange?: (stats: GameStatsSnapshot) => void;
@@ -119,7 +142,7 @@ export class GameEngine {
     }
   }
 
-  public startCountdown() {
+  public startCountdown(mode: GameMode = 'normal', scConfig?: SpeedChallengeConfig) {
     this.stopLoop();
     this.state = 'COUNTDOWN';
     this.score = 0;
@@ -129,6 +152,24 @@ export class GameEngine {
     this.comboTimer = 0;
     this.gameDuration = 0;
     this.isNewHighScore = false;
+
+    // --- Mode setup ---
+    this.gameMode = mode;
+    if (mode === 'speed_challenge' && scConfig) {
+      this.scSpeedType = scConfig.speedType;
+      this.scCurrentSpeed = scConfig.speedType === 'automatic'
+        ? GameEngine.SC_AUTO_SPEEDS[0]
+        : Math.max(0.1, scConfig.startingSpeed);
+      this.scMaximumSpeed = Math.max(this.scCurrentSpeed, scConfig.maximumSpeed);
+      this.scSpeedIncrease = Math.max(0.01, scConfig.speedIncrease);
+
+      // Load high score for SC mode
+      this.highScore = StorageManager.getSpeedChallengeHighScore();
+    } else {
+      this.gameMode = 'normal';
+      const storedStats = StorageManager.getStats();
+      this.highScore = storedStats.highScore;
+    }
 
     this.levelManager.loadLevel(1);
     this.snake.reset(8, 14, 4);
@@ -180,7 +221,17 @@ export class GameEngine {
 
   public restart() {
     soundEngine.stopMusic();
-    this.startCountdown();
+    // Restart in same mode with same SC config
+    if (this.gameMode === 'speed_challenge') {
+      this.startCountdown('speed_challenge', {
+        speedType: this.scSpeedType,
+        startingSpeed: this.scCurrentSpeed, // will be reset inside startCountdown
+        maximumSpeed: this.scMaximumSpeed,
+        speedIncrease: this.scSpeedIncrease,
+      });
+    } else {
+      this.startCountdown('normal');
+    }
   }
 
   public returnToMenu() {
@@ -202,6 +253,12 @@ export class GameEngine {
     this.levelFoodEaten = 0;
     this.updateSnakeColors();
 
+    // In SC automatic mode, advance to the speed for the new level
+    if (this.gameMode === 'speed_challenge' && this.scSpeedType === 'automatic') {
+      const idx = Math.max(0, Math.min(nextLevel - 1, GameEngine.SC_AUTO_SPEEDS.length - 1));
+      this.scCurrentSpeed = GameEngine.SC_AUTO_SPEEDS[idx];
+    }
+
     // Spawn new food if needed
     if (!this.foodManager.currentFood) {
       this.foodManager.spawnFood(this.snake.body, this.levelManager);
@@ -219,8 +276,14 @@ export class GameEngine {
   }
 
   public getCurrentSpeed(): number {
-    const cfg = this.levelManager.getLevelConfig();
     const comboBoost = Math.min(0.25, this.combo * 0.025);
+
+    if (this.gameMode === 'speed_challenge') {
+      return Number(Math.min(this.scCurrentSpeed + comboBoost, this.scMaximumSpeed).toFixed(2));
+    }
+
+    // Normal Mode — unchanged
+    const cfg = this.levelManager.getLevelConfig();
     return Number((cfg.baseSpeed + comboBoost).toFixed(2));
   }
 
@@ -340,6 +403,21 @@ export class GameEngine {
     const addedScore = Math.floor(food.points * multiplier);
     this.score += addedScore;
 
+    // Speed Challenge: increase speed on each food collect
+    if (this.gameMode === 'speed_challenge') {
+      if (this.scSpeedType === 'automatic') {
+        // Automatic: small per-food bump within the level band
+        const idx = Math.max(0, Math.min(this.levelManager.currentLevel - 1, GameEngine.SC_AUTO_SPEEDS.length - 1));
+        const levelTargetSpeed = GameEngine.SC_AUTO_SPEEDS[idx];
+        // Nudge toward level target; level transitions will snap
+        const nudge = 0.05;
+        this.scCurrentSpeed = Math.min(levelTargetSpeed, this.scCurrentSpeed + nudge);
+      } else {
+        // Custom: increase by scSpeedIncrease per food
+        this.scCurrentSpeed = Math.min(this.scMaximumSpeed, this.scCurrentSpeed + this.scSpeedIncrease);
+      }
+    }
+
     const cx = (food.x + 0.5) * this.cellSize;
     const cy = (food.y + 0.5) * this.cellSize;
     this.particles.addSparks(cx, cy, food.color, food.type === 'bonus' ? 20 : 12);
@@ -419,9 +497,15 @@ export class GameEngine {
       30
     );
 
-    const res = StorageManager.updateHighScore(this.score, this.levelManager.currentLevel);
-    this.isNewHighScore = res.isNewHighScore;
-    this.highScore = res.highScore;
+    if (this.gameMode === 'speed_challenge') {
+      const res = StorageManager.updateSpeedChallengeHighScore(this.score, this.levelManager.currentLevel);
+      this.isNewHighScore = res.isNewHighScore;
+      this.highScore = res.highScore;
+    } else {
+      const res = StorageManager.updateHighScore(this.score, this.levelManager.currentLevel);
+      this.isNewHighScore = res.isNewHighScore;
+      this.highScore = res.highScore;
+    }
     StorageManager.recordGameEnd(this.foodCollected, this.gameDuration);
 
     this.emitStats();
@@ -436,9 +520,15 @@ export class GameEngine {
     soundEngine.playVictory();
     this.particles.triggerShake(12);
 
-    const res = StorageManager.updateHighScore(this.score, 10);
-    this.isNewHighScore = res.isNewHighScore;
-    this.highScore = res.highScore;
+    if (this.gameMode === 'speed_challenge') {
+      const res = StorageManager.updateSpeedChallengeHighScore(this.score, 10);
+      this.isNewHighScore = res.isNewHighScore;
+      this.highScore = res.highScore;
+    } else {
+      const res = StorageManager.updateHighScore(this.score, 10);
+      this.isNewHighScore = res.isNewHighScore;
+      this.highScore = res.highScore;
+    }
     StorageManager.recordGameEnd(this.foodCollected, this.gameDuration);
 
     this.emitStats();
@@ -460,6 +550,8 @@ export class GameEngine {
       comboTimeLeft: Math.max(0, this.comboTimer),
       isNewHighScore: this.isNewHighScore,
       gameDuration: this.gameDuration,
+      gameMode: this.gameMode,
+      scSpeedType: this.scSpeedType,
     });
   }
 

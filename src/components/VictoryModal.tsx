@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Crown, RotateCcw, Home } from 'lucide-react';
+import { Crown, RotateCcw, Home, Zap } from 'lucide-react';
 import { GameStatsSnapshot } from '../engine/GameEngine';
 import { soundEngine } from '../engine/SoundEngine';
 
@@ -50,6 +50,14 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         <div className="w-14 h-14 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400 shadow-[0_0_24px_rgba(251,191,36,0.3)]">
           <Crown className="w-7 h-7" />
         </div>
+
+        {/* Mode Badge */}
+        {stats.gameMode === 'speed_challenge' && (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-300 text-[11px] font-mono-cyber uppercase tracking-widest">
+            <Zap className="w-3 h-3 text-fuchsia-400" />
+            <span>SPEED CHALLENGE</span>
+          </div>
+        )}
 
         {/* Title */}
         <div>

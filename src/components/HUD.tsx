@@ -22,6 +22,11 @@ export const HUD: React.FC<HUDProps> = ({
   const formattedLevel = stats.level < 10 ? `0${stats.level}` : `${stats.level}`;
   const progressPct = Math.min(100, Math.round((stats.levelFoodProgress / stats.levelFoodTarget) * 100));
 
+  const isSpeedChallenge = stats.gameMode === 'speed_challenge';
+  const speedLabel = isSpeedChallenge
+    ? `${stats.scSpeedType === 'automatic' ? 'AUTO' : 'CUSTOM'} ${stats.speed.toFixed(1)}x`
+    : `${stats.speed.toFixed(1)}x`;
+
   return (
     <div className="w-full max-w-4xl mx-auto px-4 pt-4 pb-2 z-10 select-none">
       {/* Elegant Floating Top HUD */}
@@ -46,7 +51,7 @@ export const HUD: React.FC<HUDProps> = ({
               {formattedLevel}
             </span>
           </div>
-          {/* Subtle Level Progress Dots/Bar */}
+          {/* Subtle Level Progress Bar */}
           <div className="w-20 sm:w-28 h-1 bg-white/10 rounded-full overflow-hidden mt-1.5">
             <div
               className="h-full bg-cyan-400 rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(0,245,255,0.8)]"
@@ -100,14 +105,26 @@ export const HUD: React.FC<HUDProps> = ({
       <div className="flex items-center justify-between text-xs font-mono-cyber mt-2 px-1 text-slate-400">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-slate-300">
-            <Zap className="w-3.5 h-3.5 text-cyan-400" />
+            <Zap className={`w-3.5 h-3.5 ${isSpeedChallenge ? 'text-fuchsia-400' : 'text-cyan-400'}`} />
             <span>SPEED</span>
-            <span className="font-bold text-white">{stats.speed.toFixed(1)}x</span>
+            <span className={`font-bold ${isSpeedChallenge ? 'text-fuchsia-300' : 'text-white'}`}>
+              {speedLabel}
+            </span>
           </div>
           <span className="text-white/20">•</span>
           <div className="text-slate-400">
             FOOD <span className="font-medium text-slate-200">{stats.foodCollected}</span>
           </div>
+          {/* Mode chip */}
+          {isSpeedChallenge && (
+            <>
+              <span className="text-white/20">•</span>
+              <div className="inline-flex items-center gap-1 text-[10px] font-mono-cyber text-fuchsia-400 uppercase tracking-wider">
+                <Zap className="w-3 h-3" />
+                SPEED CHALLENGE
+              </div>
+            </>
+          )}
         </div>
 
         {/* Dynamic Combo Pill (appears only when active) */}

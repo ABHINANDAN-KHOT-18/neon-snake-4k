@@ -19,8 +19,17 @@ export interface PlayerStats {
   totalTimePlayed: number; // in seconds
 }
 
+export interface SpeedChallengeSettings {
+  speedType: 'automatic' | 'custom';
+  startingSpeed: number; // 1.0 – 5.0
+  maximumSpeed: number;  // 1.0 – 10.0
+  speedIncrease: number; // 0.1 – 1.0
+}
+
 const SETTINGS_KEY = 'neon_snake_4k_settings';
 const STATS_KEY = 'neon_snake_4k_stats';
+const SPEED_CHALLENGE_HS_KEY = 'speedChallengeHighScore';
+const SPEED_CHALLENGE_SETTINGS_KEY = 'speedChallengeSettings';
 
 const DEFAULT_SETTINGS: GameSettings = {
   sfxEnabled: true,
@@ -37,6 +46,13 @@ const DEFAULT_STATS: PlayerStats = {
   totalFoodEaten: 0,
   gamesPlayed: 0,
   totalTimePlayed: 0,
+};
+
+const DEFAULT_SC_SETTINGS: SpeedChallengeSettings = {
+  speedType: 'automatic',
+  startingSpeed: 2.0,
+  maximumSpeed: 6.0,
+  speedIncrease: 0.5,
 };
 
 export class StorageManager {
@@ -104,6 +120,58 @@ export class StorageManager {
       localStorage.setItem(STATS_KEY, JSON.stringify(stats));
     } catch (e) {
       console.warn('Failed to record game end to LocalStorage', e);
+    }
+  }
+
+  // --- Speed Challenge High Score ---
+
+  public static getSpeedChallengeHighScore(): number {
+    try {
+      const stored = localStorage.getItem(SPEED_CHALLENGE_HS_KEY);
+      if (stored) return Math.max(0, parseInt(stored, 10) || 0);
+    } catch (e) {
+      console.warn('LocalStorage unavailable for SC high score', e);
+    }
+    return 0;
+  }
+
+  public static updateSpeedChallengeHighScore(score: number, _level: number): { isNewHighScore: boolean; highScore: number } {
+    const current = this.getSpeedChallengeHighScore();
+    let isNewHighScore = false;
+    let highScore = current;
+
+    if (score > current) {
+      highScore = score;
+      isNewHighScore = true;
+      try {
+        localStorage.setItem(SPEED_CHALLENGE_HS_KEY, String(highScore));
+      } catch (e) {
+        console.warn('Failed to save SC high score', e);
+      }
+    }
+
+    return { isNewHighScore, highScore };
+  }
+
+  // --- Speed Challenge Settings ---
+
+  public static getSpeedChallengeSettings(): SpeedChallengeSettings {
+    try {
+      const stored = localStorage.getItem(SPEED_CHALLENGE_SETTINGS_KEY);
+      if (stored) {
+        return { ...DEFAULT_SC_SETTINGS, ...JSON.parse(stored) };
+      }
+    } catch (e) {
+      console.warn('LocalStorage unavailable for SC settings', e);
+    }
+    return { ...DEFAULT_SC_SETTINGS };
+  }
+
+  public static saveSpeedChallengeSettings(settings: SpeedChallengeSettings) {
+    try {
+      localStorage.setItem(SPEED_CHALLENGE_SETTINGS_KEY, JSON.stringify(settings));
+    } catch (e) {
+      console.warn('Failed to save SC settings', e);
     }
   }
 }

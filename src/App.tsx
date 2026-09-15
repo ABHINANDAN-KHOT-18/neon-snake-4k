@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { GameEngine, GameState, GameStatsSnapshot } from './engine/GameEngine';
+import { GameEngine, GameState, GameStatsSnapshot, SpeedChallengeConfig } from './engine/GameEngine';
 import { StorageManager, GameSettings } from './engine/Storage';
 import { soundEngine } from './engine/SoundEngine';
 import { Direction } from './engine/Snake';
@@ -25,6 +25,10 @@ export function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [transitionNextLevel, setTransitionNextLevel] = useState<number | null>(null);
 
+  // Separate high scores per mode
+  const [normalHighScore] = useState<number>(() => StorageManager.getStats().highScore);
+  const [speedChallengeHighScore] = useState<number>(() => StorageManager.getSpeedChallengeHighScore());
+
   const [stats, setStats] = useState<GameStatsSnapshot>(() => ({
     score: 0,
     highScore: StorageManager.getStats().highScore,
@@ -37,6 +41,8 @@ export function App() {
     comboTimeLeft: 0,
     isNewHighScore: false,
     gameDuration: 0,
+    gameMode: 'normal',
+    scSpeedType: 'automatic',
   }));
 
   useEffect(() => {
@@ -46,11 +52,21 @@ export function App() {
     soundEngine.setMusicVolume(settings.musicVolume);
   }, []);
 
-  const handleStartGame = useCallback(() => {
+  // --- Normal Mode ---
+  const handlePlayNormal = useCallback(() => {
     soundEngine.init();
     setTransitionNextLevel(null);
     if (engineRef.current) {
-      engineRef.current.startCountdown();
+      engineRef.current.startCountdown('normal');
+    }
+  }, []);
+
+  // --- Speed Challenge Mode ---
+  const handlePlaySpeedChallenge = useCallback((config: SpeedChallengeConfig) => {
+    soundEngine.init();
+    setTransitionNextLevel(null);
+    if (engineRef.current) {
+      engineRef.current.startCountdown('speed_challenge', config);
     }
   }, []);
 
@@ -147,8 +163,10 @@ export function App() {
         {/* Main Menu Screen */}
         {gameState === 'MENU' && (
           <MainMenu
-            highScore={stats.highScore}
-            onPlay={handleStartGame}
+            normalHighScore={normalHighScore}
+            speedChallengeHighScore={speedChallengeHighScore}
+            onPlayNormal={handlePlayNormal}
+            onPlaySpeedChallenge={handlePlaySpeedChallenge}
             onHowToPlay={() => setIsHowToPlayOpen(true)}
             onSettings={() => setIsSettingsOpen(true)}
           />

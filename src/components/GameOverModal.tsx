@@ -51,7 +51,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
         </div>
 
         {/* Quick Stats Pill Row */}
-        <div className="flex items-center justify-center gap-4 text-xs font-mono-cyber text-slate-400 py-1 px-4 rounded-full bg-white/[0.03]">
+        <div className="flex items-center justify-center gap-3 text-xs font-mono-cyber text-slate-400 py-1.5 px-4 rounded-full bg-white/[0.03]">
           <div className="flex items-center gap-1.5">
             <Trophy className={`w-3.5 h-3.5 ${isSpeedChallenge ? 'text-fuchsia-400' : 'text-amber-400'}`} />
             <span>BEST:</span>
@@ -60,6 +60,11 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           <span className="text-white/10">•</span>
           <div>
             LEVEL <span className="font-bold text-slate-200">{stats.level}</span>
+          </div>
+          <span className="text-white/10">•</span>
+          <div className="flex items-center gap-1 text-amber-300">
+            <span>🪙</span>
+            <span className="font-bold">{(stats.coins || 0).toLocaleString()}</span>
           </div>
         </div>
 

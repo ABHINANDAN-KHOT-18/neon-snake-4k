@@ -203,8 +203,41 @@ export const LEVEL_CONFIGS: LevelConfig[] = [
   },
 ];
 
+export interface ColorScheme {
+  primary: string;
+  secondary: string;
+  glow: string;
+  ambientBg: string;
+}
+
+export type ThemeId = 'cyber_cyan' | 'vaporwave' | 'quantum_emerald' | 'solar_flare' | 'nebula';
+
+export const THEME_PALETTES: Record<ThemeId, { name: string; scheme: ColorScheme }> = {
+  cyber_cyan: {
+    name: 'Cyber Cyan',
+    scheme: { primary: '#00f5ff', secondary: '#3b82f6', glow: 'rgba(0, 245, 255, 0.4)', ambientBg: '#080b18' },
+  },
+  vaporwave: {
+    name: 'Vaporwave Sunset',
+    scheme: { primary: '#ff71ce', secondary: '#01cdfe', glow: 'rgba(255, 113, 206, 0.4)', ambientBg: '#13081a' },
+  },
+  quantum_emerald: {
+    name: 'Quantum Emerald',
+    scheme: { primary: '#05ffa1', secondary: '#00b894', glow: 'rgba(5, 255, 161, 0.4)', ambientBg: '#041410' },
+  },
+  solar_flare: {
+    name: 'Solar Flare',
+    scheme: { primary: '#ffb800', secondary: '#ff4757', glow: 'rgba(255, 184, 0, 0.4)', ambientBg: '#180b05' },
+  },
+  nebula: {
+    name: 'Deep Space Nebula',
+    scheme: { primary: '#b967ff', secondary: '#05d5fa', glow: 'rgba(185, 103, 255, 0.4)', ambientBg: '#0c0618' },
+  },
+};
+
 export class LevelManager {
   public currentLevel: number = 1;
+  public activeTheme: ThemeId = 'cyber_cyan';
   public staticObstacles: StaticObstacle[] = [];
   public movingObstacles: MovingObstacle[] = [];
   public rotatingObstacles: RotatingObstacle[] = [];
@@ -220,7 +253,14 @@ export class LevelManager {
 
   public getLevelConfig(level: number = this.currentLevel): LevelConfig {
     const idx = Math.max(1, Math.min(level, LEVEL_CONFIGS.length)) - 1;
-    return LEVEL_CONFIGS[idx];
+    const baseCfg = LEVEL_CONFIGS[idx];
+    if (this.activeTheme !== 'cyber_cyan' && THEME_PALETTES[this.activeTheme]) {
+      return {
+        ...baseCfg,
+        colorScheme: THEME_PALETTES[this.activeTheme].scheme,
+      };
+    }
+    return baseCfg;
   }
 
   public loadLevel(levelNumber: number) {
@@ -557,33 +597,64 @@ export class LevelManager {
     return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
   }
 
-  public isCellOccupiedByObstacle(gridX: number, gridY: number): boolean {
+  public isValidFoodPosition(gridX: number, gridY: number): boolean {
+    // 1. Boundary check (at least 1 cell from outer grid borders)
+    if (gridX < 1 || gridX >= this.gridCols - 1 || gridY < 1 || gridY >= this.gridRows - 1) {
+      return false;
+    }
+
+    // 2. Static Obstacles (Complete hitbox + 1 cell safety margin)
     for (const obs of this.staticObstacles) {
-      if (gridX >= obs.x && gridX < obs.x + obs.w && gridY >= obs.y && gridY < obs.y + obs.h) {
-        return true;
+      if (
+        gridX >= obs.x - 1 &&
+        gridX <= obs.x + obs.w &&
+        gridY >= obs.y - 1 &&
+        gridY <= obs.y + obs.h
+      ) {
+        return false;
       }
     }
+
+    // 3. Moving Obstacles (Check current position + full patrol range + 1 cell safety margin)
     for (const obs of this.movingObstacles) {
       if (
-        gridX >= obs.minX - 1 &&
-        gridX <= obs.maxX + obs.w + 1 &&
-        gridY >= obs.minY - 1 &&
-        gridY <= obs.maxY + obs.h + 1
+        gridX >= obs.x - 1 &&
+        gridX <= obs.x + obs.w &&
+        gridY >= obs.y - 1 &&
+        gridY <= obs.y + obs.h
       ) {
-        return true;
+        return false;
+      }
+      if (
+        gridX >= obs.minX - 1 &&
+        gridX <= obs.maxX + obs.w &&
+        gridY >= obs.minY - 1 &&
+        gridY <= obs.maxY + obs.h
+      ) {
+        return false;
       }
     }
+
+    // 4. Rotating Obstacles (Hub + arm length + 1.5 cell safety margin)
     for (const obs of this.rotatingObstacles) {
-      if (Math.hypot(gridX - obs.cx, gridY - obs.cy) <= obs.length + 1) {
-        return true;
+      const dist = Math.hypot(gridX - obs.cx, gridY - obs.cy);
+      if (dist <= obs.length + 1.5) {
+        return false;
       }
     }
+
+    // 5. Laser Hazards (Distance to line segment <= 1.5 cells)
     for (const laser of this.laserHazards) {
       if (this.distToSegment(gridX, gridY, laser.x1, laser.y1, laser.x2, laser.y2) <= 1.5) {
-        return true;
+        return false;
       }
     }
-    return false;
+
+    return true;
+  }
+
+  public isCellOccupiedByObstacle(gridX: number, gridY: number): boolean {
+    return !this.isValidFoodPosition(gridX, gridY);
   }
 
   public render(ctx: CanvasRenderingContext2D, cellSize: number) {

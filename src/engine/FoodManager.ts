@@ -87,7 +87,7 @@ export class FoodManager {
       if (this.currentFood && this.currentFood.x === x && this.currentFood.y === y) continue;
       if (this.bonusFood && this.bonusFood.x === x && this.bonusFood.y === y) continue;
 
-      if (levelManager.isCellOccupiedByObstacle(x, y)) continue;
+      if (!levelManager.isValidFoodPosition(x, y)) continue;
 
       return { x, y };
     }
@@ -99,7 +99,7 @@ export class FoodManager {
         if (hitsSnake) continue;
         if (this.currentFood && this.currentFood.x === x && this.currentFood.y === y) continue;
         if (this.bonusFood && this.bonusFood.x === x && this.bonusFood.y === y) continue;
-        if (levelManager.isCellOccupiedByObstacle(x, y)) continue;
+        if (!levelManager.isValidFoodPosition(x, y)) continue;
 
         safeCells.push({ x, y });
       }
@@ -110,6 +110,19 @@ export class FoodManager {
     }
 
     return { x: 2, y: 2 };
+  }
+
+  public repositionIfColliding(snakeBody: { x: number; y: number }[], levelManager: LevelManager) {
+    if (this.currentFood && !levelManager.isValidFoodPosition(this.currentFood.x, this.currentFood.y)) {
+      const pos = this.findGuaranteedSafeCoord(snakeBody, levelManager);
+      this.currentFood.x = pos.x;
+      this.currentFood.y = pos.y;
+    }
+    if (this.bonusFood && !levelManager.isValidFoodPosition(this.bonusFood.x, this.bonusFood.y)) {
+      const pos = this.findGuaranteedSafeCoord(snakeBody, levelManager);
+      this.bonusFood.x = pos.x;
+      this.bonusFood.y = pos.y;
+    }
   }
 
   public update(dt: number = 0.016) {

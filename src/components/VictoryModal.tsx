@@ -80,20 +80,25 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         </div>
 
         {/* Clean Minimal Stats Row */}
-        <div className="grid grid-cols-3 gap-2.5 w-full text-xs font-mono-cyber">
-          <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-            <div className="text-[10px] text-slate-500 uppercase">HIGH SCORE</div>
+        <div className="grid grid-cols-4 gap-2 w-full text-xs font-mono-cyber">
+          <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+            <div className="text-[9px] text-slate-500 uppercase">HIGH SCORE</div>
             <div className="font-bold text-slate-200 mt-0.5">{stats.highScore.toLocaleString()}</div>
           </div>
 
-          <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-            <div className="text-[10px] text-slate-500 uppercase">MAX SPEED</div>
+          <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+            <div className="text-[9px] text-slate-500 uppercase">MAX SPEED</div>
             <div className="font-bold text-cyan-400 mt-0.5">{stats.speed.toFixed(1)}x</div>
           </div>
 
-          <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-            <div className="text-[10px] text-slate-500 uppercase">FOOD</div>
+          <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+            <div className="text-[9px] text-slate-500 uppercase">FOOD</div>
             <div className="font-bold text-emerald-400 mt-0.5">{stats.foodCollected}</div>
+          </div>
+
+          <div className="p-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+            <div className="text-[9px] text-slate-500 uppercase">COINS</div>
+            <div className="font-bold text-amber-400 mt-0.5">🪙 {(stats.coins || 0).toLocaleString()}</div>
           </div>
         </div>
 

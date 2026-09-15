@@ -4,10 +4,13 @@
 
 import { Snake, Direction } from './Snake';
 import { FoodManager, FoodItem } from './FoodManager';
-import { LevelManager } from './LevelManager';
+import { LevelManager, ThemeId } from './LevelManager';
 import { ParticleSystem } from './ParticleSystem';
 import { soundEngine } from './SoundEngine';
 import { StorageManager } from './Storage';
+import { PowerUpManager, PowerUpActiveState, POWER_UP_CONFIGS } from './PowerUpManager';
+import { AchievementManager, AchievementToast } from './AchievementManager';
+import { AutoPlayAI } from './AutoPlayAI';
 
 export type GameState = 'MENU' | 'COUNTDOWN' | 'PLAYING' | 'PAUSED' | 'GAMEOVER' | 'VICTORY' | 'LEVEL_TRANSITION';
 export type GameMode = 'normal' | 'speed_challenge';
@@ -18,6 +21,7 @@ export interface SpeedChallengeConfig {
   startingSpeed: number;
   maximumSpeed: number;
   speedIncrease: number;
+  autoPlay?: boolean;
 }
 
 export interface GameStatsSnapshot {
@@ -34,6 +38,12 @@ export interface GameStatsSnapshot {
   gameDuration: number;
   gameMode: GameMode;
   scSpeedType: SCSpeedType;
+  activePowerUps: PowerUpActiveState[];
+  hasShield: boolean;
+  theme: ThemeId;
+  coins: number;
+  isAutoPlayEnabled: boolean;
+  isAutomationUnlocked: boolean;
 }
 
 export class GameEngine {
@@ -52,6 +62,13 @@ export class GameEngine {
   public foodManager: FoodManager;
   public levelManager: LevelManager;
   public particles: ParticleSystem;
+  public powerUpManager: PowerUpManager;
+  public achievementManager: AchievementManager;
+
+  // Auto Play & Coin State
+  public coins: number = StorageManager.getCoins();
+  public isAutoPlayEnabled: boolean = false;
+  public isAutomationUnlocked: boolean = StorageManager.isAutomationUnlocked();
 
   // Game Play State
   public state: GameState = 'MENU';
@@ -59,6 +76,8 @@ export class GameEngine {
   public highScore: number = 0;
   public foodCollected: number = 0;
   public levelFoodEaten: number = 0;
+  public goldenEatenRun: number = 0;
+  public powerUpsCollectedTotal: number = 0;
   public combo: number = 0;
   public comboTimer: number = 0;
   public readonly maxComboTime: number = 3.5;
@@ -85,6 +104,7 @@ export class GameEngine {
   public onStatsChange?: (stats: GameStatsSnapshot) => void;
   public onStateChange?: (state: GameState) => void;
   public onLevelTransition?: (nextLevel: number) => void;
+  public onAchievementToast?: (toast: AchievementToast) => void;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -94,12 +114,24 @@ export class GameEngine {
     this.foodManager = new FoodManager(this.gridCols, this.gridRows);
     this.levelManager = new LevelManager(this.gridCols, this.gridRows);
     this.particles = new ParticleSystem();
+    this.powerUpManager = new PowerUpManager(this.gridCols, this.gridRows);
+    this.achievementManager = new AchievementManager();
+
+    const storedSettings = StorageManager.getSettings();
+    this.levelManager.activeTheme = storedSettings.theme;
 
     const storedStats = StorageManager.getStats();
     this.highScore = storedStats.highScore;
 
+    this.updateSnakeColors();
     this.resizeCanvas();
     window.addEventListener('resize', this.handleResize);
+  }
+
+  public setTheme(themeId: ThemeId) {
+    this.levelManager.activeTheme = themeId;
+    this.updateSnakeColors();
+    this.render();
   }
 
   public destroy() {
@@ -148,10 +180,14 @@ export class GameEngine {
     this.score = 0;
     this.foodCollected = 0;
     this.levelFoodEaten = 0;
+    this.goldenEatenRun = 0;
+    this.powerUpsCollectedTotal = 0;
     this.combo = 0;
     this.comboTimer = 0;
     this.gameDuration = 0;
     this.isNewHighScore = false;
+
+    this.powerUpManager.reset();
 
     // --- Mode setup ---
     this.gameMode = mode;
@@ -163,10 +199,19 @@ export class GameEngine {
       this.scMaximumSpeed = Math.max(this.scCurrentSpeed, scConfig.maximumSpeed);
       this.scSpeedIncrease = Math.max(0.01, scConfig.speedIncrease);
 
-      // Load high score for SC mode
       this.highScore = StorageManager.getSpeedChallengeHighScore();
+
+      // Single-use 500-coin Auto Play activation
+      if (scConfig.autoPlay && StorageManager.getCoins() >= 500) {
+        StorageManager.deductCoins(500);
+        this.coins = StorageManager.getCoins();
+        this.isAutoPlayEnabled = true;
+      } else {
+        this.isAutoPlayEnabled = false;
+      }
     } else {
       this.gameMode = 'normal';
+      this.isAutoPlayEnabled = false;
       const storedStats = StorageManager.getStats();
       this.highScore = storedStats.highScore;
     }
@@ -221,11 +266,10 @@ export class GameEngine {
 
   public restart() {
     soundEngine.stopMusic();
-    // Restart in same mode with same SC config
     if (this.gameMode === 'speed_challenge') {
       this.startCountdown('speed_challenge', {
         speedType: this.scSpeedType,
-        startingSpeed: this.scCurrentSpeed, // will be reset inside startCountdown
+        startingSpeed: this.scCurrentSpeed,
         maximumSpeed: this.scMaximumSpeed,
         speedIncrease: this.scSpeedIncrease,
       });
@@ -237,6 +281,7 @@ export class GameEngine {
   public returnToMenu() {
     this.stopLoop();
     this.state = 'MENU';
+    this.isAutoPlayEnabled = false;
     soundEngine.stopMusic();
     soundEngine.playClick();
     this.onStateChange?.('MENU');
@@ -253,13 +298,11 @@ export class GameEngine {
     this.levelFoodEaten = 0;
     this.updateSnakeColors();
 
-    // In SC automatic mode, advance to the speed for the new level
     if (this.gameMode === 'speed_challenge' && this.scSpeedType === 'automatic') {
       const idx = Math.max(0, Math.min(nextLevel - 1, GameEngine.SC_AUTO_SPEEDS.length - 1));
       this.scCurrentSpeed = GameEngine.SC_AUTO_SPEEDS[idx];
     }
 
-    // Spawn new food if needed
     if (!this.foodManager.currentFood) {
       this.foodManager.spawnFood(this.snake.body, this.levelManager);
     }
@@ -277,14 +320,20 @@ export class GameEngine {
 
   public getCurrentSpeed(): number {
     const comboBoost = Math.min(0.25, this.combo * 0.025);
+    let rawSpeed = 1.0;
 
     if (this.gameMode === 'speed_challenge') {
-      return Number(Math.min(this.scCurrentSpeed + comboBoost, this.scMaximumSpeed).toFixed(2));
+      rawSpeed = Math.min(this.scCurrentSpeed + comboBoost, this.scMaximumSpeed);
+    } else {
+      const cfg = this.levelManager.getLevelConfig();
+      rawSpeed = cfg.baseSpeed + comboBoost;
     }
 
-    // Normal Mode — unchanged
-    const cfg = this.levelManager.getLevelConfig();
-    return Number((cfg.baseSpeed + comboBoost).toFixed(2));
+    if (this.powerUpManager.isEffectActive('timewarp')) {
+      rawSpeed *= 0.6; // Time Warp 40% slow-mo!
+    }
+
+    return Number(Math.max(0.2, rawSpeed).toFixed(2));
   }
 
   private updateSnakeColors() {
@@ -324,7 +373,31 @@ export class GameEngine {
 
     this.foodManager.update(dt);
     this.levelManager.update(dt);
+    this.foodManager.repositionIfColliding(this.snake.body, this.levelManager);
     this.particles.update();
+
+    this.powerUpManager.update(
+      dt,
+      this.snake.getHead(),
+      [this.foodManager.currentFood, this.foodManager.bonusFood],
+      this.snake.body,
+      this.levelManager
+    );
+
+    // Achievement checks
+    this.achievementManager.check(
+      {
+        level: this.levelManager.currentLevel,
+        speed: this.getCurrentSpeed(),
+        combo: this.combo,
+        goldenInRun: this.goldenEatenRun,
+        powerUpsCollectedTotal: this.powerUpsCollectedTotal,
+      },
+      (toast) => {
+        soundEngine.playAchievement();
+        this.onAchievementToast?.(toast);
+      }
+    );
 
     const currentSpeed = this.getCurrentSpeed();
     const ticksPerSec = this.baseTickRate * currentSpeed;
@@ -338,29 +411,92 @@ export class GameEngine {
       this.performGameTick();
     }
 
-    if (this.state === 'PLAYING') {
+    if (this.state === 'PLAYING' && !this.powerUpManager.isEffectActive('phase')) {
       const head = this.snake.getInterpolatedHead();
       if (this.levelManager.checkContinuousCollision(head.x, head.y)) {
-        this.handleGameOver();
-        return;
+        if (this.powerUpManager.consumeShield()) {
+          soundEngine.playShieldAbsorb();
+          this.particles.triggerShake(10);
+          this.particles.addShockwave(
+            (head.x + 0.5) * this.cellSize,
+            (head.y + 0.5) * this.cellSize,
+            '#06b6d4',
+            120
+          );
+        } else {
+          this.handleGameOver();
+          return;
+        }
       }
     }
 
     this.emitStats();
   }
 
+  public toggleAutoPlay(): boolean {
+    if (this.gameMode !== 'speed_challenge') return false;
+    this.isAutoPlayEnabled = !this.isAutoPlayEnabled;
+    this.emitStats();
+    return true;
+  }
+
+
   private performGameTick() {
+    if (this.isAutoPlayEnabled) {
+      const autoDir = AutoPlayAI.getNextDirection(
+        this.snake,
+        this.foodManager,
+        this.levelManager,
+        this.powerUpManager,
+        this.gridCols,
+        this.gridRows
+      );
+      this.snake.setDirection(autoDir);
+    }
+
+    const isPhase = this.powerUpManager.isEffectActive('phase');
     const alive = this.snake.step(this.gridCols, this.gridRows);
-    if (!alive) {
-      this.handleGameOver();
-      return;
+
+    if (!alive && !isPhase) {
+      if (this.powerUpManager.consumeShield()) {
+        soundEngine.playShieldAbsorb();
+        const head = this.snake.getHead();
+        this.particles.triggerShake(10);
+        this.particles.addShockwave(
+          (head.x + 0.5) * this.cellSize,
+          (head.y + 0.5) * this.cellSize,
+          '#06b6d4',
+          120
+        );
+      } else {
+        this.handleGameOver();
+        return;
+      }
+    } else if (!alive && isPhase) {
+      // Wrap head around grid walls during phase shift!
+      const head = this.snake.body[0];
+      if (head.x < 0) head.x = this.gridCols - 1;
+      else if (head.x >= this.gridCols) head.x = 0;
+      if (head.y < 0) head.y = this.gridRows - 1;
+      else if (head.y >= this.gridRows) head.y = 0;
     }
 
     const head = this.snake.getHead();
 
-    if (this.levelManager.checkDiscreteGridCollision(head.x, head.y)) {
-      this.handleGameOver();
-      return;
+    if (!isPhase && this.levelManager.checkDiscreteGridCollision(head.x, head.y)) {
+      if (this.powerUpManager.consumeShield()) {
+        soundEngine.playShieldAbsorb();
+        this.particles.triggerShake(10);
+        this.particles.addShockwave(
+          (head.x + 0.5) * this.cellSize,
+          (head.y + 0.5) * this.cellSize,
+          '#06b6d4',
+          120
+        );
+      } else {
+        this.handleGameOver();
+        return;
+      }
     }
 
     const tail = this.snake.body[this.snake.body.length - 1];
@@ -371,10 +507,10 @@ export class GameEngine {
       cfg.colorScheme.primary
     );
 
+    // Food collisions
     if (
       this.foodManager.currentFood &&
-      head.x === this.foodManager.currentFood.x &&
-      head.y === this.foodManager.currentFood.y
+      Math.hypot(head.x - this.foodManager.currentFood.x, head.y - this.foodManager.currentFood.y) < 0.85
     ) {
       this.collectFood(this.foodManager.currentFood);
       this.foodManager.spawnFood(this.snake.body, this.levelManager);
@@ -382,11 +518,33 @@ export class GameEngine {
 
     if (
       this.foodManager.bonusFood &&
-      head.x === this.foodManager.bonusFood.x &&
-      head.y === this.foodManager.bonusFood.y
+      Math.hypot(head.x - this.foodManager.bonusFood.x, head.y - this.foodManager.bonusFood.y) < 0.85
     ) {
       this.collectFood(this.foodManager.bonusFood);
       this.foodManager.bonusFood = null;
+    }
+
+    // Power-Up pickup collision
+    if (
+      this.powerUpManager.activeItem &&
+      Math.hypot(head.x - this.powerUpManager.activeItem.x, head.y - this.powerUpManager.activeItem.y) < 0.85
+    ) {
+      const pItem = this.powerUpManager.activeItem;
+      this.powerUpManager.collectPowerUp(pItem.type);
+      this.powerUpsCollectedTotal++;
+      soundEngine.playPowerUp();
+
+      const cx = (pItem.x + 0.5) * this.cellSize;
+      const cy = (pItem.y + 0.5) * this.cellSize;
+      this.particles.addSparks(cx, cy, pItem.color, 24);
+      this.particles.addShockwave(cx, cy, pItem.color, 100);
+      this.particles.addFloatingText(
+        cx,
+        cy - 12,
+        POWER_UP_CONFIGS[pItem.type].name,
+        pItem.color,
+        18
+      );
     }
   }
 
@@ -395,6 +553,14 @@ export class GameEngine {
     this.foodCollected++;
     this.levelFoodEaten++;
     this.foodManager.foodEatenCount++;
+    if (food.type === 'golden') this.goldenEatenRun++;
+
+    // Coin earnings: Snake Challenge only (normal=1, golden=5, bonus=10)
+    if (this.gameMode === 'normal') {
+      const coinEarned = food.type === 'golden' ? 5 : food.type === 'bonus' ? 10 : 1;
+      StorageManager.addCoins(coinEarned);
+      this.coins = StorageManager.getCoins();
+    }
 
     this.combo = Math.min(10, this.combo + 1);
     this.comboTimer = this.maxComboTime;
@@ -403,17 +569,13 @@ export class GameEngine {
     const addedScore = Math.floor(food.points * multiplier);
     this.score += addedScore;
 
-    // Speed Challenge: increase speed on each food collect
     if (this.gameMode === 'speed_challenge') {
       if (this.scSpeedType === 'automatic') {
-        // Automatic: small per-food bump within the level band
         const idx = Math.max(0, Math.min(this.levelManager.currentLevel - 1, GameEngine.SC_AUTO_SPEEDS.length - 1));
         const levelTargetSpeed = GameEngine.SC_AUTO_SPEEDS[idx];
-        // Nudge toward level target; level transitions will snap
         const nudge = 0.05;
         this.scCurrentSpeed = Math.min(levelTargetSpeed, this.scCurrentSpeed + nudge);
       } else {
-        // Custom: increase by scSpeedIncrease per food
         this.scCurrentSpeed = Math.min(this.scMaximumSpeed, this.scCurrentSpeed + this.scSpeedIncrease);
       }
     }
@@ -457,6 +619,12 @@ export class GameEngine {
   }
 
   private advanceLevel() {
+    // Level completion coin reward (+10 coins) — Snake Challenge only
+    if (this.gameMode === 'normal') {
+      StorageManager.addCoins(10);
+      this.coins = StorageManager.getCoins();
+    }
+
     if (this.levelManager.currentLevel >= 10) {
       this.handleVictory();
       return;
@@ -464,7 +632,6 @@ export class GameEngine {
 
     const nextLevel = this.levelManager.currentLevel + 1;
 
-    // Freeze game loop & initiate Level Transition Countdown
     this.stopLoop();
     this.state = 'LEVEL_TRANSITION';
 
@@ -506,7 +673,11 @@ export class GameEngine {
       this.isNewHighScore = res.isNewHighScore;
       this.highScore = res.highScore;
     }
-    StorageManager.recordGameEnd(this.foodCollected, this.gameDuration);
+    StorageManager.recordGameEnd(this.foodCollected, this.gameDuration, {
+      powerUps: this.powerUpsCollectedTotal,
+      golden: this.goldenEatenRun,
+      maxCombo: this.combo,
+    });
 
     this.emitStats();
     this.render();
@@ -514,11 +685,25 @@ export class GameEngine {
   }
 
   private handleVictory() {
+    // Victory completion reward (+25 coins) — Snake Challenge only
+    if (this.gameMode === 'normal') {
+      StorageManager.addCoins(25);
+      this.coins = StorageManager.getCoins();
+    }
+
     this.stopLoop();
     this.state = 'VICTORY';
     soundEngine.stopMusic();
     soundEngine.playVictory();
     this.particles.triggerShake(12);
+
+    this.achievementManager.check(
+      { level: 10, speed: this.getCurrentSpeed(), combo: this.combo, isVictory: true },
+      (toast) => {
+        soundEngine.playAchievement();
+        this.onAchievementToast?.(toast);
+      }
+    );
 
     if (this.gameMode === 'speed_challenge') {
       const res = StorageManager.updateSpeedChallengeHighScore(this.score, 10);
@@ -529,14 +714,18 @@ export class GameEngine {
       this.isNewHighScore = res.isNewHighScore;
       this.highScore = res.highScore;
     }
-    StorageManager.recordGameEnd(this.foodCollected, this.gameDuration);
+    StorageManager.recordGameEnd(this.foodCollected, this.gameDuration, {
+      powerUps: this.powerUpsCollectedTotal,
+      golden: this.goldenEatenRun,
+      maxCombo: this.combo,
+    });
 
     this.emitStats();
     this.render();
     this.onStateChange?.('VICTORY');
   }
 
-  private emitStats() {
+  public emitStats() {
     const cfg = this.levelManager.getLevelConfig();
     this.onStatsChange?.({
       score: this.score,
@@ -552,6 +741,12 @@ export class GameEngine {
       gameDuration: this.gameDuration,
       gameMode: this.gameMode,
       scSpeedType: this.scSpeedType,
+      activePowerUps: this.powerUpManager.getActiveEffectsList(),
+      hasShield: this.powerUpManager.hasShield,
+      theme: this.levelManager.activeTheme,
+      coins: this.coins,
+      isAutoPlayEnabled: this.isAutoPlayEnabled,
+      isAutomationUnlocked: StorageManager.isAutomationUnlocked(),
     });
   }
 
@@ -600,12 +795,33 @@ export class GameEngine {
     // 5. Render Food
     this.foodManager.render(ctx, this.cellSize);
 
-    // 6. Render Snake
+    // 6. Render Active Power-Up Items on Grid
+    this.powerUpManager.render(ctx, this.cellSize);
+
+    // 7. Render Snake
     this.snake.render(ctx, this.cellSize);
 
-    // 7. Render Particles
+    // Shield / Phase Head Aura
+    if (this.powerUpManager.hasShield || this.powerUpManager.isEffectActive('phase')) {
+      const head = this.snake.getInterpolatedHead();
+      const cx = (head.x + 0.5) * this.cellSize;
+      const cy = (head.y + 0.5) * this.cellSize;
+      const auraColor = this.powerUpManager.hasShield ? '#06b6d4' : '#ec4899';
+      ctx.save();
+      ctx.strokeStyle = auraColor;
+      ctx.shadowColor = auraColor;
+      ctx.shadowBlur = 14;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, this.cellSize * 0.65, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 8. Render Particles
     this.particles.render(ctx);
 
     ctx.restore();
   }
 }
+

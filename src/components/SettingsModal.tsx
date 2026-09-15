@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Volume2, VolumeX, Music, Disc, RotateCcw } from 'lucide-react';
+import { X, Volume2, VolumeX, Music, Disc, RotateCcw, Palette } from 'lucide-react';
 import { GameSettings, StorageManager } from '../engine/Storage';
 import { soundEngine } from '../engine/SoundEngine';
 
@@ -130,6 +130,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 className="w-full accent-purple-400 cursor-pointer h-1 bg-white/10 rounded-lg appearance-none"
               />
             )}
+          </div>
+
+          {/* Theme Palette Selector */}
+          <div className="flex flex-col gap-2.5 pt-3 border-t border-white/10">
+            <div className="flex items-center gap-2 text-xs font-heading font-semibold text-slate-200">
+              <Palette className="w-4 h-4 text-cyan-400" />
+              <span>NEON THEME PALETTE</span>
+            </div>
+            <div className="grid grid-cols-5 gap-1.5">
+              {(
+                [
+                  { id: 'cyber_cyan', color: '#00f5ff', name: 'Cyan' },
+                  { id: 'vaporwave', color: '#ff71ce', name: 'Pink' },
+                  { id: 'quantum_emerald', color: '#05ffa1', name: 'Green' },
+                  { id: 'solar_flare', color: '#ffb800', name: 'Gold' },
+                  { id: 'nebula', color: '#b967ff', name: 'Purple' },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    const updated = { ...settings, theme: t.id };
+                    StorageManager.saveSettings(updated);
+                    onUpdateSettings(updated);
+                    if (settings.sfxEnabled) soundEngine.playClick();
+                  }}
+                  className={`flex flex-col items-center gap-1 p-1.5 rounded-xl border transition-all ${
+                    settings.theme === t.id
+                      ? 'border-white bg-white/15 scale-105 shadow-md'
+                      : 'border-white/10 bg-white/5 hover:border-white/30'
+                  }`}
+                >
+                  <div
+                    className="w-5 h-5 rounded-full border border-white/30 shadow-inner"
+                    style={{ backgroundColor: t.color }}
+                  />
+                  <span className="text-[9px] font-mono-cyber text-slate-400">{t.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Reset Stats Option */}

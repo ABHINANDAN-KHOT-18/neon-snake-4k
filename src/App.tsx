@@ -3,6 +3,7 @@ import { GameEngine, GameState, GameStatsSnapshot, SpeedChallengeConfig } from '
 import { StorageManager, GameSettings } from './engine/Storage';
 import { soundEngine } from './engine/SoundEngine';
 import { Direction } from './engine/Snake';
+import { AchievementToast } from './engine/AchievementManager';
 
 import { HUD } from './components/HUD';
 import { MainMenu } from './components/MainMenu';
@@ -13,6 +14,8 @@ import { GameOverModal } from './components/GameOverModal';
 import { VictoryModal } from './components/VictoryModal';
 import { HowToPlayModal } from './components/HowToPlayModal';
 import { SettingsModal } from './components/SettingsModal';
+import { AchievementsModal } from './components/AchievementsModal';
+import { LeaderboardModal } from './components/LeaderboardModal';
 import { VirtualDPad } from './components/VirtualDPad';
 import { GameCanvas } from './components/GameCanvas';
 
@@ -23,11 +26,14 @@ export function App() {
   const [settings, setSettings] = useState<GameSettings>(() => StorageManager.getSettings());
   const [isHowToPlayOpen, setIsHowToPlayOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [achievementToast, setAchievementToast] = useState<AchievementToast | null>(null);
   const [transitionNextLevel, setTransitionNextLevel] = useState<number | null>(null);
 
-  // Separate high scores per mode
-  const [normalHighScore] = useState<number>(() => StorageManager.getStats().highScore);
-  const [speedChallengeHighScore] = useState<number>(() => StorageManager.getSpeedChallengeHighScore());
+  // High scores read from StorageManager (non-reactive initial values, updated via stats)
+  const normalHighScore = StorageManager.getStats().highScore;
+  const speedChallengeHighScore = StorageManager.getSpeedChallengeHighScore();
 
   const [stats, setStats] = useState<GameStatsSnapshot>(() => ({
     score: 0,
@@ -43,6 +49,12 @@ export function App() {
     gameDuration: 0,
     gameMode: 'normal',
     scSpeedType: 'automatic',
+    activePowerUps: [],
+    hasShield: false,
+    theme: StorageManager.getSettings().theme,
+    coins: StorageManager.getCoins(),
+    isAutoPlayEnabled: false,
+    isAutomationUnlocked: StorageManager.isAutomationUnlocked(),
   }));
 
   useEffect(() => {
@@ -50,6 +62,19 @@ export function App() {
     soundEngine.setMusicEnabled(settings.musicEnabled);
     soundEngine.setSfxVolume(settings.sfxVolume);
     soundEngine.setMusicVolume(settings.musicVolume);
+  }, [settings]);
+
+  useEffect(() => {
+    if (engineRef.current && settings.theme) {
+      engineRef.current.setTheme(settings.theme);
+    }
+  }, [settings.theme]);
+
+  const handleAchievementToast = useCallback((toast: AchievementToast) => {
+    setAchievementToast(toast);
+    setTimeout(() => {
+      setAchievementToast(null);
+    }, 3500);
   }, []);
 
   // --- Normal Mode ---
@@ -125,6 +150,22 @@ export function App() {
       <div className="ambient-glow top-0 left-1/4 w-[450px] h-[450px] bg-cyan-500/15" />
       <div className="ambient-glow bottom-0 right-1/4 w-[450px] h-[450px] bg-indigo-500/15" />
 
+      {/* Achievement Unlock Toast */}
+      {achievementToast && (
+        <div className="fixed top-4 right-4 z-50 glass-panel p-4 rounded-2xl border border-amber-500/50 flex items-center gap-3 shadow-2xl shadow-amber-950/60 animate-slide-down">
+          <div className="text-3xl p-2 rounded-xl bg-amber-500/20 border border-amber-500/40">
+            {achievementToast.icon}
+          </div>
+          <div>
+            <span className="text-[10px] font-mono-cyber font-bold tracking-widest text-amber-400 uppercase">
+              ACHIEVEMENT UNLOCKED!
+            </span>
+            <h4 className="text-sm font-heading font-black text-white">{achievementToast.title}</h4>
+            <p className="text-xs font-mono-cyber text-slate-300">{achievementToast.description}</p>
+          </div>
+        </div>
+      )}
+
       {/* Top Floating HUD */}
       {gameState !== 'MENU' && (
         <HUD
@@ -144,6 +185,11 @@ export function App() {
             StorageManager.saveSettings(updated);
             setSettings(updated);
           }}
+          onToggleAutoPlay={() => {
+            if (engineRef.current) {
+              engineRef.current.toggleAutoPlay();
+            }
+          }}
         />
       )}
 
@@ -157,6 +203,7 @@ export function App() {
             onStateChange={setGameState}
             onPause={handlePause}
             onLevelTransition={handleLevelTransition}
+            onAchievementToast={handleAchievementToast}
           />
         </div>
 
@@ -165,10 +212,13 @@ export function App() {
           <MainMenu
             normalHighScore={normalHighScore}
             speedChallengeHighScore={speedChallengeHighScore}
+            coins={stats.coins ?? StorageManager.getCoins()}
             onPlayNormal={handlePlayNormal}
             onPlaySpeedChallenge={handlePlaySpeedChallenge}
             onHowToPlay={() => setIsHowToPlayOpen(true)}
             onSettings={() => setIsSettingsOpen(true)}
+            onAchievements={() => setIsAchievementsOpen(true)}
+            onLeaderboard={() => setIsLeaderboardOpen(true)}
           />
         )}
 
@@ -231,8 +281,19 @@ export function App() {
           onClose={() => setIsSettingsOpen(false)}
         />
       )}
+
+      {/* Achievements Modal */}
+      {isAchievementsOpen && (
+        <AchievementsModal onClose={() => setIsAchievementsOpen(false)} />
+      )}
+
+      {/* Leaderboard Modal */}
+      {isLeaderboardOpen && (
+        <LeaderboardModal onClose={() => setIsLeaderboardOpen(false)} />
+      )}
     </div>
   );
 }
 
 export default App;
+

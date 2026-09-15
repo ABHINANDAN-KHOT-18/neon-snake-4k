@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { GameEngine, GameState, GameStatsSnapshot } from '../engine/GameEngine';
+import { AchievementToast } from '../engine/AchievementManager';
 
 interface GameCanvasProps {
   engineRef: React.MutableRefObject<GameEngine | null>;
@@ -7,6 +8,7 @@ interface GameCanvasProps {
   onStateChange: (state: GameState) => void;
   onPause: () => void;
   onLevelTransition?: (nextLevel: number) => void;
+  onAchievementToast?: (toast: AchievementToast) => void;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -15,13 +17,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   onStateChange,
   onPause,
   onLevelTransition,
+  onAchievementToast,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  const callbacksRef = useRef({ onStatsChange, onStateChange, onLevelTransition, onPause });
-  callbacksRef.current = { onStatsChange, onStateChange, onLevelTransition, onPause };
+  const callbacksRef = useRef({ onStatsChange, onStateChange, onLevelTransition, onPause, onAchievementToast });
+  callbacksRef.current = { onStatsChange, onStateChange, onLevelTransition, onPause, onAchievementToast };
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -30,6 +33,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     engine.onStatsChange = (stats) => callbacksRef.current.onStatsChange?.(stats);
     engine.onStateChange = (state) => callbacksRef.current.onStateChange?.(state);
     engine.onLevelTransition = (nextLevel) => callbacksRef.current.onLevelTransition?.(nextLevel);
+    engine.onAchievementToast = (toast) => callbacksRef.current.onAchievementToast?.(toast);
     engineRef.current = engine;
 
     const resizeObserver = new ResizeObserver(() => {

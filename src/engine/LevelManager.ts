@@ -695,14 +695,13 @@ export class LevelManager {
     this.laserHazards = data.laserHazards;
   }
 
-  /**
-   * Render a set of pre-generated obstacles at reduced opacity for the level transition preview.
-   */
+
+
   public renderPreviewObstacles(
     ctx: CanvasRenderingContext2D,
     cellSize: number,
     data: PreGeneratedObstacles,
-    opacity: number = 0.25
+    opacity: number = 0.28
   ) {
     ctx.save();
     ctx.globalAlpha = opacity;
@@ -732,7 +731,7 @@ export class LevelManager {
       ctx.restore();
     });
 
-    // 2. Moving Obstacles (render at initial position)
+    // 2. Moving Obstacles
     data.movingObstacles.forEach((obs) => {
       const x = obs.x * cellSize;
       const y = obs.y * cellSize;
@@ -759,7 +758,7 @@ export class LevelManager {
       ctx.restore();
     });
 
-    // 3. Rotating Laser Crosses (render at initial angle)
+    // 3. Rotating Laser Crosses
     data.rotatingObstacles.forEach((obs) => {
       ctx.save();
       ctx.translate(obs.cx * cellSize, obs.cy * cellSize);
@@ -767,7 +766,7 @@ export class LevelManager {
 
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = obs.color;
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 8;
       ctx.beginPath();
       ctx.arc(0, 0, cellSize * 0.3, 0, Math.PI * 2);
       ctx.fill();
@@ -780,14 +779,12 @@ export class LevelManager {
       ctx.moveTo(0, -obs.length * cellSize);
       ctx.lineTo(0, obs.length * cellSize);
       ctx.stroke();
-
       ctx.restore();
     });
 
-    // 4. Laser Hazards (render as dashed lines, since they cycle on/off)
+    // 4. Laser Hazards
     data.laserHazards.forEach((laser) => {
       ctx.save();
-      ctx.setLineDash([4, 8]);
       ctx.strokeStyle = laser.color;
       ctx.lineWidth = 2;
       ctx.shadowColor = laser.color;
@@ -801,7 +798,6 @@ export class LevelManager {
 
     ctx.restore();
   }
-
 
   public render(ctx: CanvasRenderingContext2D, cellSize: number) {
     const cfg = this.getLevelConfig(this.currentLevel);

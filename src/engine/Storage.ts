@@ -115,28 +115,15 @@ export class StorageManager {
     return true;
   }
 
-  // --- Automation Unlock ---
+  // --- Automation Status (Pay-Per-Use 500 Coins) ---
   public static isAutomationUnlocked(): boolean {
+    // Clear legacy permanent unlock key if present
     try {
-      const stored = localStorage.getItem(AUTOMATION_KEY);
-      if (stored === 'true') return true;
+      localStorage.removeItem(AUTOMATION_KEY);
     } catch (e) {
-      console.warn('LocalStorage unavailable for automation status', e);
+      // Ignore
     }
-    return false;
-  }
-
-  public static unlockAutomation(): boolean {
-    if (this.isAutomationUnlocked()) return true;
-    if (this.deductCoins(111)) {
-      try {
-        localStorage.setItem(AUTOMATION_KEY, 'true');
-      } catch (e) {
-        console.warn('Failed to save automation unlock status', e);
-      }
-      return true;
-    }
-    return false;
+    return this.getCoins() >= 500;
   }
 
   public static getSettings(): GameSettings {

@@ -69,6 +69,7 @@ export class GameEngine {
   public coins: number = StorageManager.getCoins();
   public isAutoPlayEnabled: boolean = false;
   public isAutomationUnlocked: boolean = StorageManager.isAutomationUnlocked();
+  private autoPlayDeductedForSession: boolean = false;
 
   // Game Play State
   public state: GameState = 'MENU';
@@ -220,6 +221,7 @@ export class GameEngine {
     this.powerUpManager.reset();
     this.nextLevelPreview = null;
     this.isSpeedRamping = false;
+    this.autoPlayDeductedForSession = false;
 
     // --- Mode setup ---
     this.gameMode = mode;
@@ -234,8 +236,9 @@ export class GameEngine {
       this.highScore = StorageManager.getSpeedChallengeHighScore();
 
       // Single-use 500-coin Auto Play activation
-      if (scConfig.autoPlay && StorageManager.getCoins() >= 500) {
+      if (scConfig.autoPlay && !this.autoPlayDeductedForSession && StorageManager.getCoins() >= 500) {
         StorageManager.deductCoins(500);
+        this.autoPlayDeductedForSession = true;
         this.coins = StorageManager.getCoins();
         this.isAutoPlayEnabled = true;
       } else {
@@ -314,6 +317,7 @@ export class GameEngine {
     this.stopLoop();
     this.state = 'MENU';
     this.isAutoPlayEnabled = false;
+    this.autoPlayDeductedForSession = false;
     soundEngine.stopMusic();
     soundEngine.playClick();
     this.onStateChange?.('MENU');
@@ -516,8 +520,20 @@ export class GameEngine {
   }
 
   public toggleAutoPlay(): boolean {
-    if (this.gameMode !== 'speed_challenge') return false;
-    this.isAutoPlayEnabled = !this.isAutoPlayEnabled;
+    if (this.isAutoPlayEnabled) {
+      this.isAutoPlayEnabled = false;
+    } else {
+      if (this.autoPlayDeductedForSession) {
+        this.isAutoPlayEnabled = true;
+      } else if (StorageManager.getCoins() >= 500) {
+        StorageManager.deductCoins(500);
+        this.autoPlayDeductedForSession = true;
+        this.coins = StorageManager.getCoins();
+        this.isAutoPlayEnabled = true;
+      } else {
+        return false;
+      }
+    }
     this.emitStats();
     return true;
   }

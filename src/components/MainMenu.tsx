@@ -75,12 +75,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       setValidationMsg('Insufficient coins for Auto Play! 500 Coins required.');
       return;
     }
+    const wasAutoPlaySelected = isAutoPlaySelected;
+    setIsAutoPlaySelected(false);
     onPlaySpeedChallenge({
       speedType: scSettings.speedType,
       startingSpeed: scSettings.startingSpeed,
       maximumSpeed: scSettings.maximumSpeed,
       speedIncrease: scSettings.speedIncrease,
-      autoPlay: isAutoPlaySelected,
+      autoPlay: wasAutoPlaySelected,
     });
   };
 

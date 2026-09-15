@@ -60,6 +60,14 @@ export interface LaserHazard {
   color: string;
 }
 
+export interface PreGeneratedObstacles {
+  level: number;
+  staticObstacles: StaticObstacle[];
+  movingObstacles: MovingObstacle[];
+  rotatingObstacles: RotatingObstacle[];
+  laserHazards: LaserHazard[];
+}
+
 export const LEVEL_CONFIGS: LevelConfig[] = [
   {
     level: 1,
@@ -656,6 +664,144 @@ export class LevelManager {
   public isCellOccupiedByObstacle(gridX: number, gridY: number): boolean {
     return !this.isValidFoodPosition(gridX, gridY);
   }
+
+  /**
+   * Generate obstacles for a given level WITHOUT modifying the current LevelManager state.
+   * Returns a snapshot of the obstacle arrays for that level.
+   */
+  public generateObstaclesForLevel(levelNumber: number): PreGeneratedObstacles {
+    // Use a temporary LevelManager so the current state is untouched
+    const temp = new LevelManager(this.gridCols, this.gridRows);
+    temp.activeTheme = this.activeTheme;
+    temp.loadLevel(levelNumber);
+    return {
+      level: levelNumber,
+      staticObstacles: temp.staticObstacles,
+      movingObstacles: temp.movingObstacles,
+      rotatingObstacles: temp.rotatingObstacles,
+      laserHazards: temp.laserHazards,
+    };
+  }
+
+  /**
+   * Apply a pre-generated obstacle set as the active obstacles for the given level,
+   * without calling loadLevel (which would regenerate them).
+   */
+  public applyPreGeneratedObstacles(data: PreGeneratedObstacles) {
+    this.currentLevel = Math.max(1, Math.min(data.level, 10));
+    this.staticObstacles = data.staticObstacles;
+    this.movingObstacles = data.movingObstacles;
+    this.rotatingObstacles = data.rotatingObstacles;
+    this.laserHazards = data.laserHazards;
+  }
+
+  /**
+   * Render a set of pre-generated obstacles at reduced opacity for the level transition preview.
+   */
+  public renderPreviewObstacles(
+    ctx: CanvasRenderingContext2D,
+    cellSize: number,
+    data: PreGeneratedObstacles,
+    opacity: number = 0.25
+  ) {
+    ctx.save();
+    ctx.globalAlpha = opacity;
+
+    const cfg = this.getLevelConfig(data.level);
+
+    // 1. Static Obstacles
+    data.staticObstacles.forEach((obs) => {
+      const color = obs.color || cfg.colorScheme.primary;
+      const x = obs.x * cellSize;
+      const y = obs.y * cellSize;
+      const w = obs.w * cellSize;
+      const h = obs.h * cellSize;
+      const r = 4;
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 6;
+
+      ctx.beginPath();
+      ctx.roundRect(x + 1, y + 1, w - 2, h - 2, r);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // 2. Moving Obstacles (render at initial position)
+    data.movingObstacles.forEach((obs) => {
+      const x = obs.x * cellSize;
+      const y = obs.y * cellSize;
+      const w = obs.w * cellSize;
+      const h = obs.h * cellSize;
+      const r = 4;
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.strokeStyle = obs.color;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = obs.color;
+      ctx.shadowBlur = 8;
+
+      ctx.beginPath();
+      ctx.roundRect(x + 1, y + 1, w - 2, h - 2, r);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = obs.color;
+      ctx.beginPath();
+      ctx.arc(x + w / 2, y + h / 2, cellSize * 0.25, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // 3. Rotating Laser Crosses (render at initial angle)
+    data.rotatingObstacles.forEach((obs) => {
+      ctx.save();
+      ctx.translate(obs.cx * cellSize, obs.cy * cellSize);
+      ctx.rotate(obs.angle);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = obs.color;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(0, 0, cellSize * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = obs.color;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(-obs.length * cellSize, 0);
+      ctx.lineTo(obs.length * cellSize, 0);
+      ctx.moveTo(0, -obs.length * cellSize);
+      ctx.lineTo(0, obs.length * cellSize);
+      ctx.stroke();
+
+      ctx.restore();
+    });
+
+    // 4. Laser Hazards (render as dashed lines, since they cycle on/off)
+    data.laserHazards.forEach((laser) => {
+      ctx.save();
+      ctx.setLineDash([4, 8]);
+      ctx.strokeStyle = laser.color;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = laser.color;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(laser.x1 * cellSize, laser.y1 * cellSize);
+      ctx.lineTo(laser.x2 * cellSize, laser.y2 * cellSize);
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    ctx.restore();
+  }
+
 
   public render(ctx: CanvasRenderingContext2D, cellSize: number) {
     const cfg = this.getLevelConfig(this.currentLevel);

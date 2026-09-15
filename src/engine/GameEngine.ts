@@ -4,7 +4,7 @@
 
 import { Snake, Direction } from './Snake';
 import { FoodManager, FoodItem } from './FoodManager';
-import { LevelManager, ThemeId } from './LevelManager';
+import { LevelManager, ThemeId, PreGeneratedObstacles } from './LevelManager';
 import { ParticleSystem } from './ParticleSystem';
 import { soundEngine } from './SoundEngine';
 import { StorageManager } from './Storage';
@@ -84,6 +84,16 @@ export class GameEngine {
   public gameDuration: number = 0;
   public isNewHighScore: boolean = false;
 
+  // Level transition preview: next-level obstacles pre-generated once
+  public nextLevelPreview: PreGeneratedObstacles | null = null;
+
+  // Smooth speed ramping: avoid sudden speed jumps after level transition
+  private speedRampFrom: number = 1.0;
+  private speedRampTo: number = 1.0;
+  private speedRampElapsed: number = 0;
+  private speedRampDuration: number = 3.0; // seconds to ramp from old to new speed
+  private isSpeedRamping: boolean = false;
+
   // Timing & Movement Tick
   private tickAccumulator: number = 0;
   private baseTickRate: number = 7;
@@ -160,11 +170,23 @@ export class GameEngine {
     const rect = parent.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
 
-    let availableWidth = rect.width > 0 ? rect.width : window.innerWidth - 24;
-    let availableHeight = rect.height > 0 ? rect.height : window.innerHeight * 0.65;
+    const windowW = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+    const windowH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
 
-    const size = Math.min(availableWidth, availableHeight) - 6;
-    const finalSize = Math.max(220, Math.floor(size));
+    const isMobile = windowW < 768;
+
+    let availableWidth = rect.width > 0 ? rect.width : windowW - (isMobile ? 8 : 24);
+    let availableHeight = rect.height > 0 ? rect.height : windowH * 0.65;
+
+    // Hard ceiling check against window height: HUD + canvas + D-pad + padding must fit inside viewport
+    const maxViewportH = isMobile ? windowH - 185 : windowH - 95;
+    if (availableHeight > maxViewportH && maxViewportH > 160) {
+      availableHeight = maxViewportH;
+    }
+
+    const marginBuffer = isMobile ? 2 : 8;
+    const size = Math.min(availableWidth, availableHeight) - marginBuffer;
+    const finalSize = Math.max(180, Math.floor(size));
 
     this.canvas.width = finalSize * dpr;
     this.canvas.height = finalSize * dpr;
@@ -196,6 +218,8 @@ export class GameEngine {
     this.isNewHighScore = false;
 
     this.powerUpManager.reset();
+    this.nextLevelPreview = null;
+    this.isSpeedRamping = false;
 
     // --- Mode setup ---
     this.gameMode = mode;
@@ -302,7 +326,17 @@ export class GameEngine {
   }
 
   public completeLevelTransition(nextLevel: number) {
-    this.levelManager.loadLevel(nextLevel);
+    // Capture speed BEFORE the level change for smooth ramping
+    const oldSpeed = this.getCurrentSpeed();
+
+    // Apply pre-generated obstacles if available (same layout shown during preview)
+    if (this.nextLevelPreview && this.nextLevelPreview.level === nextLevel) {
+      this.levelManager.applyPreGeneratedObstacles(this.nextLevelPreview);
+    } else {
+      this.levelManager.loadLevel(nextLevel);
+    }
+    this.nextLevelPreview = null;
+
     this.levelFoodEaten = 0;
     this.updateSnakeColors();
 
@@ -313,6 +347,18 @@ export class GameEngine {
 
     if (!this.foodManager.currentFood) {
       this.foodManager.spawnFood(this.snake.body, this.levelManager);
+    }
+
+    // Setup smooth speed ramp from old speed to new level's target speed
+    const newTargetSpeed = this.getRawLevelSpeed();
+    if (newTargetSpeed > oldSpeed + 0.05) {
+      this.isSpeedRamping = true;
+      this.speedRampFrom = oldSpeed;
+      this.speedRampTo = newTargetSpeed;
+      this.speedRampElapsed = 0;
+      this.speedRampDuration = 3.0;
+    } else {
+      this.isSpeedRamping = false;
     }
 
     soundEngine.updateMusicSpeed(this.getCurrentSpeed());
@@ -326,6 +372,16 @@ export class GameEngine {
     this.animFrameId = requestAnimationFrame(this.loop);
   }
 
+  /** Get the raw base speed for the current level (no combo, no power-ups). */
+  private getRawLevelSpeed(): number {
+    if (this.gameMode === 'speed_challenge') {
+      return this.scCurrentSpeed;
+    } else {
+      const cfg = this.levelManager.getLevelConfig();
+      return cfg.baseSpeed;
+    }
+  }
+
   public getCurrentSpeed(): number {
     const comboBoost = Math.min(0.25, this.combo * 0.025);
     let rawSpeed = 1.0;
@@ -334,7 +390,20 @@ export class GameEngine {
       rawSpeed = Math.min(this.scCurrentSpeed + comboBoost, this.scMaximumSpeed);
     } else {
       const cfg = this.levelManager.getLevelConfig();
-      rawSpeed = cfg.baseSpeed + comboBoost;
+      let baseSpeed = cfg.baseSpeed;
+
+      // Apply smooth speed ramping after level transition
+      if (this.isSpeedRamping) {
+        const t = Math.min(1, this.speedRampElapsed / this.speedRampDuration);
+        // Ease-out curve for natural feel
+        const eased = 1 - Math.pow(1 - t, 2);
+        baseSpeed = this.speedRampFrom + (this.speedRampTo - this.speedRampFrom) * eased;
+        if (t >= 1) {
+          this.isSpeedRamping = false;
+        }
+      }
+
+      rawSpeed = baseSpeed + comboBoost;
     }
 
     if (this.powerUpManager.isEffectActive('timewarp')) {
@@ -370,6 +439,11 @@ export class GameEngine {
 
   private update(dt: number) {
     this.gameDuration += dt;
+
+    // Advance the speed ramp timer
+    if (this.isSpeedRamping) {
+      this.speedRampElapsed += dt;
+    }
 
     if (this.combo > 0) {
       this.comboTimer -= dt;
@@ -640,6 +714,10 @@ export class GameEngine {
 
     const nextLevel = this.levelManager.currentLevel + 1;
 
+    // Pre-generate next level's obstacles ONCE — these will be shown as a faint
+    // preview during the countdown and then applied as the active layout after GO.
+    this.nextLevelPreview = this.levelManager.generateObstaclesForLevel(nextLevel);
+
     this.stopLoop();
     this.state = 'LEVEL_TRANSITION';
 
@@ -797,8 +875,13 @@ export class GameEngine {
     ctx.lineWidth = 1.5;
     ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
 
-    // 4. Render Hazards
-    this.levelManager.render(ctx, this.cellSize);
+    // 4. Render Hazards (or preview obstacles during level transition)
+    if (this.state === 'LEVEL_TRANSITION' && this.nextLevelPreview) {
+      // During level transition: render next-level obstacles faintly behind the countdown
+      this.levelManager.renderPreviewObstacles(ctx, this.cellSize, this.nextLevelPreview, 0.28);
+    } else {
+      this.levelManager.render(ctx, this.cellSize);
+    }
 
     // 5. Render Food
     this.foodManager.render(ctx, this.cellSize);

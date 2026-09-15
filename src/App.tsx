@@ -207,9 +207,9 @@ export function App() {
       )}
 
       {/* Main Game Stage */}
-      <div className="relative flex-1 flex flex-col items-center justify-center w-full max-w-5xl px-3">
+      <div className="relative flex-1 min-h-0 min-w-0 flex flex-col items-center justify-center w-full max-w-5xl px-0.5 sm:px-3 overflow-hidden">
         {/* Game Canvas */}
-        <div className={`w-full h-full items-center justify-center ${gameState === 'MENU' ? 'hidden' : 'flex'}`}>
+        <div className={`w-full h-full min-h-0 min-w-0 items-center justify-center overflow-hidden ${gameState === 'MENU' ? 'hidden' : 'flex'}`}>
           <GameCanvas
             engineRef={engineRef}
             onStatsChange={setStats}

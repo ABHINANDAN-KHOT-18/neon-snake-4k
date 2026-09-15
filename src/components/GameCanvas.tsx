@@ -156,7 +156,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   return (
     <div
       ref={containerRef}
-      className="relative flex-1 flex items-center justify-center w-full min-h-0 p-1 sm:p-2 overflow-hidden select-none touch-none"
+      className="relative flex-1 min-h-0 min-w-0 flex items-center justify-center w-full h-full p-0.5 sm:p-2 overflow-hidden select-none touch-none"
     >
       <canvas
         ref={canvasRef}

@@ -56,33 +56,6 @@ The main goals of NEON SNAKE 4K are:
 ------------------------------------------------------------------------
 
 # 🎮 Game Modes
-
-<h2>🖼️ Screenshots</h2>
-
-<h3>🏠 Main Menu</h3>
-<img src="./screenshots/08-main-menu.jpg" width="300">
-
-<h3>🎮 Gameplay</h3>
-<img src="./screenshots/07-gameplay.jpg" width="300">
-
-<h3>📖 How to Play</h3>
-<img src="./screenshots/01-how-to-play.jpg" width="300">
-
-<h3>🏆 Leaderboard</h3>
-<img src="./screenshots/02-leaderboard.jpg" width="300">
-
-<h3>🎖️ Achievements</h3>
-<img src="./screenshots/03-achievements.jpg" width="300">
-
-<h3>⚙️ Settings</h3>
-<img src="./screenshots/04-settings.jpg" width="300">
-
-<h3>⚡ Neon Velocity</h3>
-<img src="./screenshots/05-neon-velocity.jpg" width="300">
-
-<h3>💀 Game Over</h3>
-<img src="./screenshots/06-game-over.jpg" width="300">
-
 ## 🐍 Snake Challenge
 
 The primary progression-oriented mode.
